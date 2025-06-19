@@ -50,12 +50,45 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
       assert html_response(conn, 200) =~ "Manage Filtered RSS Feed"
       assert html_response(conn, 200) =~ filtered_feed.url
       assert html_response(conn, 200) =~ filtered_feed.prompt
-      assert html_response(conn, 200) =~ "/filtered_feeds/#{filtered_feed.slug}"
+      assert html_response(conn, 200) =~ "/filtered_feeds/#{filtered_feed.slug}/rss"
     end
 
     test "returns 404 for non-existent slug", %{conn: conn} do
       assert_error_sent 404, fn ->
         get(conn, ~p"/filtered_feeds/nonexistent")
+      end
+    end
+  end
+
+  describe "GET /filtered_feeds/:slug/rss" do
+    test "serves RSS feed when original feed is accessible", %{conn: conn} do
+      # Create a filtered feed pointing to NY Times RSS feed
+      filtered_feed = create_filtered_feed(%{
+        url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
+        prompt: "Filter out sports content"
+      })
+      
+      conn = get(conn, ~p"/filtered_feeds/#{filtered_feed.slug}/rss")
+      
+      assert response_content_type(conn, :xml)
+      assert conn.status == 200
+    end
+
+    test "returns error when original feed is not accessible", %{conn: conn} do
+      filtered_feed = create_filtered_feed(%{
+        url: "https://example.com/nonexistent-feed.xml",
+        prompt: "Filter out sports content"
+      })
+      
+      conn = get(conn, ~p"/filtered_feeds/#{filtered_feed.slug}/rss")
+      
+      assert conn.status == 502
+      assert response(conn, 502) =~ "Error fetching RSS feed"
+    end
+
+    test "returns 404 for non-existent slug", %{conn: conn} do
+      assert_error_sent 404, fn ->
+        get(conn, ~p"/filtered_feeds/nonexistent/rss")
       end
     end
   end
@@ -91,12 +124,14 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
     end
   end
 
-  defp create_filtered_feed do
-    %FilteredFeed{}
-    |> FilteredFeed.changeset(%{
+  defp create_filtered_feed(attrs \\ %{}) do
+    default_attrs = %{
       url: "https://example.com/feed.xml",
       prompt: "Filter out sports content"
-    })
+    }
+    
+    %FilteredFeed{}
+    |> FilteredFeed.changeset(Map.merge(default_attrs, attrs))
     |> Repo.insert!()
   end
 end

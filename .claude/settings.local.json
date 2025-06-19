@@ -3,7 +3,8 @@
     "allow": [
       "Bash(mix test)",
       "Bash(mix phx.routes:*)",
-      "Bash(mix test:*)"
+      "Bash(mix test:*)",
+      "Bash(mix deps.get:*)"
     ],
     "deny": []
   }

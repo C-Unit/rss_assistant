@@ -18,11 +18,12 @@ defmodule RssAssistantWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
-    
+
     get "/filtered_feeds/new", FilteredFeedController, :new
     post "/filtered_feeds", FilteredFeedController, :create
     get "/filtered_feeds/:slug", FilteredFeedController, :show
     patch "/filtered_feeds/:slug", FilteredFeedController, :update
+    get "/filtered_feeds/:slug/rss", FilteredFeedController, :rss_feed
   end
 
   # Other scopes may use custom stacks.

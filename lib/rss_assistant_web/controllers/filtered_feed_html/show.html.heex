@@ -8,10 +8,10 @@
     <h3 class="text-lg font-semibold mb-2">Your Filtered RSS Feed URL</h3>
     <div class="flex items-center space-x-2">
       <code class="bg-white px-3 py-2 rounded border flex-1 font-mono text-sm">
-        <%= url(~p"/filtered_feeds/#{@filtered_feed.slug}") %>
+        <%= url(~p"/filtered_feeds/#{@filtered_feed.slug}/rss") %>
       </code>
       <button 
-        onclick={"navigator.clipboard.writeText('#{url(~p"/filtered_feeds/#{@filtered_feed.slug}")}')"}
+        onclick={"navigator.clipboard.writeText('#{url(~p"/filtered_feeds/#{@filtered_feed.slug}/rss")}')"}
         class="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
       >
         Copy
