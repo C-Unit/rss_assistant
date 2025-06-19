@@ -1,0 +1,51 @@
+<.header>
+  Manage Filtered RSS Feed
+  <:subtitle>Your unique RSS feed URL and management options</:subtitle>
+</.header>
+
+<div class="space-y-6">
+  <div class="bg-gray-50 p-4 rounded-lg">
+    <h3 class="text-lg font-semibold mb-2">Your Filtered RSS Feed URL</h3>
+    <div class="flex items-center space-x-2">
+      <code class="bg-white px-3 py-2 rounded border flex-1 font-mono text-sm">
+        <%= url(~p"/filtered_feeds/#{@filtered_feed.slug}") %>
+      </code>
+      <button 
+        onclick={"navigator.clipboard.writeText('#{url(~p"/filtered_feeds/#{@filtered_feed.slug}")}')"}
+        class="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+      >
+        Copy
+      </button>
+    </div>
+  </div>
+
+  <div class="bg-gray-50 p-4 rounded-lg">
+    <h3 class="text-lg font-semibold mb-2">Feed Details</h3>
+    <p><strong>Original RSS URL:</strong> <%= @filtered_feed.url %></p>
+    <p><strong>Filter Description:</strong> <%= @filtered_feed.prompt %></p>
+  </div>
+
+  <div>
+    <h3 class="text-lg font-semibold mb-4">Update Filter</h3>
+    <.simple_form :let={f} for={@changeset} action={~p"/filtered_feeds/#{@filtered_feed.slug}"} method="patch">
+      <.error :if={@changeset.action}>
+        Oops, something went wrong! Please check the errors below.
+      </.error>
+      
+      <.input field={f[:url]} type="url" label="RSS Feed URL" />
+      <.input 
+        field={f[:prompt]} 
+        type="textarea" 
+        label="Filter Description" 
+        placeholder="Describe what you want to filter out from this feed..."
+        rows="4"
+      />
+      
+      <:actions>
+        <.button>Update Filter</.button>
+      </:actions>
+    </.simple_form>
+  </div>
+</div>
+
+<.back navigate={~p"/"}>Back to home</.back>

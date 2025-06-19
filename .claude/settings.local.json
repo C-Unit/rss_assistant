@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mix test)",
+      "Bash(mix phx.routes:*)",
+      "Bash(mix test:*)"
+    ],
+    "deny": []
+  }
+}

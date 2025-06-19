@@ -1,0 +1,26 @@
+<.header>
+  Create Filtered RSS Feed
+  <:subtitle>Enter an RSS feed URL and describe what you want to filter out</:subtitle>
+</.header>
+
+<.simple_form :let={f} for={@changeset} action={~p"/filtered_feeds"}>
+  <.error :if={@changeset.action}>
+    Oops, something went wrong! Please check the errors below.
+  </.error>
+  
+  <.input field={f[:url]} type="url" label="RSS Feed URL" placeholder="https://example.com/feed.xml" required />
+  <.input 
+    field={f[:prompt]} 
+    type="textarea" 
+    label="Filter Description" 
+    placeholder="Describe what you want to filter out from this feed..."
+    rows="4"
+    required 
+  />
+  
+  <:actions>
+    <.button>Create Filtered Feed</.button>
+  </:actions>
+</.simple_form>
+
+<.back navigate={~p"/"}>Back to home</.back>
