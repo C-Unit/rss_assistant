@@ -2,8 +2,9 @@ defmodule RssAssistant.FeedFilterTest do
   use ExUnit.Case, async: true
 
   import Mox
+  import ExUnit.CaptureLog
 
-  alias RssAssistant.{FeedFilter, RssItem}
+  alias RssAssistant.{FeedFilter, FeedItem}
 
   # Make sure mocks are verified when the test exits
   setup :verify_on_exit!
@@ -34,8 +35,8 @@ defmodule RssAssistant.FeedFilterTest do
 
       # Mock the filter to include first item, exclude second
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn
-        %RssItem{title: "Include This"}, "test prompt" -> true
-        %RssItem{title: "Exclude This"}, "test prompt" -> false
+        %FeedItem{title: "Include This"}, "test prompt" -> true
+        %FeedItem{title: "Exclude This"}, "test prompt" -> false
       end)
 
       assert {:ok, filtered_xml} = FeedFilter.filter_feed(rss_xml, "test prompt")
@@ -87,7 +88,7 @@ defmodule RssAssistant.FeedFilterTest do
       </rss>
       """
 
-      expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ -> false end)
+      expect(RssAssistant.Filter.Mock, :should_include?, 1, fn _, _ -> false end)
 
       assert {:ok, filtered_xml} = FeedFilter.filter_feed(rss_xml, "exclude all")
 
@@ -97,7 +98,10 @@ defmodule RssAssistant.FeedFilterTest do
     end
 
     test "handles invalid XML gracefully" do
-      assert {:error, :invalid_xml} = FeedFilter.filter_feed("invalid xml", "test")
+      capture_log(fn ->
+        assert {:error, :invalid_xml} = FeedFilter.filter_feed("invalid xml", "test")
+      end)
+
       assert {:error, :invalid_input} = FeedFilter.filter_feed(nil, "test")
       assert {:error, :invalid_input} = FeedFilter.filter_feed("valid", nil)
     end
@@ -114,7 +118,7 @@ defmodule RssAssistant.FeedFilterTest do
       </feed>
       """
 
-      expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ -> true end)
+      expect(RssAssistant.Filter.Mock, :should_include?, 1, fn _, _ -> true end)
 
       assert {:ok, filtered_xml} = FeedFilter.filter_feed(atom_xml, "test")
 

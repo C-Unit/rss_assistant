@@ -7,7 +7,7 @@ defmodule RssAssistant.FeedFilter do
   """
 
   import SweetXml
-  alias RssAssistant.{FeedParser, RssItem}
+  alias RssAssistant.{FeedParser, FeedItem}
 
   @doc """
   Filters an RSS feed based on a user prompt.
@@ -153,7 +153,7 @@ defmodule RssAssistant.FeedFilter do
   end
 
   # Build individual RSS item XML
-  defp build_rss_item_xml(%RssItem{} = item) do
+  defp build_rss_item_xml(%FeedItem{} = item) do
     categories_xml =
       item.categories
       |> Enum.map(fn cat -> "<category>#{escape_xml(cat)}</category>" end)
@@ -172,7 +172,7 @@ defmodule RssAssistant.FeedFilter do
   end
 
   # Build individual Atom entry XML
-  defp build_atom_entry_xml(%RssItem{} = item) do
+  defp build_atom_entry_xml(%FeedItem{} = item) do
     """
         <entry>
           #{if item.title, do: "<title>#{escape_xml(item.title)}</title>", else: ""}

@@ -1,7 +1,8 @@
 defmodule RssAssistant.FeedParserTest do
   use ExUnit.Case, async: true
+  import ExUnit.CaptureLog
 
-  alias RssAssistant.{FeedParser, RssItem}
+  alias RssAssistant.{FeedParser, FeedItem}
 
   describe "parse_feed/1" do
     test "parses RSS 2.0 feed successfully" do
@@ -35,7 +36,7 @@ defmodule RssAssistant.FeedParserTest do
 
       [first_item, second_item] = items
 
-      assert %RssItem{
+      assert %FeedItem{
                id: "item-1",
                title: "First Item",
                description: "First item description",
@@ -45,7 +46,7 @@ defmodule RssAssistant.FeedParserTest do
                categories: ["Tech", "News"]
              } = first_item
 
-      assert %RssItem{
+      assert %FeedItem{
                id: "item-2",
                title: "Second Item",
                description: "Second item description",
@@ -76,7 +77,7 @@ defmodule RssAssistant.FeedParserTest do
 
       [item] = items
 
-      assert %RssItem{
+      assert %FeedItem{
                id: "atom-entry-1",
                title: "Atom Entry",
                description: "Atom entry summary",
@@ -88,9 +89,11 @@ defmodule RssAssistant.FeedParserTest do
     end
 
     test "handles invalid XML" do
-      assert {:error, :invalid_xml} = FeedParser.parse_feed("invalid xml")
-      assert {:error, :invalid_xml} = FeedParser.parse_feed(nil)
-      assert {:error, :invalid_xml} = FeedParser.parse_feed(123)
+      capture_log(fn ->
+        assert {:error, :invalid_xml} = FeedParser.parse_feed("invalid xml")
+        assert {:error, :invalid_xml} = FeedParser.parse_feed(nil)
+        assert {:error, :invalid_xml} = FeedParser.parse_feed(123)
+      end)
     end
 
     test "handles empty feed" do

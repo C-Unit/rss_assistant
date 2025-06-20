@@ -1,4 +1,4 @@
-defmodule RssAssistant.RssItem do
+defmodule RssAssistant.FeedItem do
   @moduledoc """
   Represents a single item from an RSS or Atom feed.
   """
@@ -24,34 +24,43 @@ defmodule RssAssistant.RssItem do
   ]
 
   @doc """
-  Generates a unique ID for an RSS item.
+  Generates a unique ID for a feed item.
 
   Uses the guid if available, otherwise creates a hash from link and title.
+  Returns a result tuple with the ID or an error.
   """
-  def generate_id(%{guid: guid}) when is_binary(guid) and guid != "", do: guid
+  def generate_id(%{guid: guid}) when is_binary(guid) and guid != "", do: {:ok, guid}
 
   def generate_id(%{link: link, title: title}) when is_binary(link) and is_binary(title) do
-    :crypto.hash(:sha256, "#{link}#{title}")
-    |> Base.encode16(case: :lower)
-    |> String.slice(0, 16)
+    id =
+      :crypto.hash(:sha256, "#{link}#{title}")
+      |> Base.encode16(case: :lower)
+      |> String.slice(0, 16)
+
+    {:ok, id}
   end
 
   def generate_id(%{link: link}) when is_binary(link) do
-    :crypto.hash(:sha256, link)
-    |> Base.encode16(case: :lower)
-    |> String.slice(0, 16)
+    id =
+      :crypto.hash(:sha256, link)
+      |> Base.encode16(case: :lower)
+      |> String.slice(0, 16)
+
+    {:ok, id}
   end
 
   def generate_id(%{title: title}) when is_binary(title) do
-    :crypto.hash(:sha256, title)
-    |> Base.encode16(case: :lower)
-    |> String.slice(0, 16)
+    id =
+      :crypto.hash(:sha256, title)
+      |> Base.encode16(case: :lower)
+      |> String.slice(0, 16)
+
+    {:ok, id}
   end
 
   def generate_id(_) do
-    # Fallback to a deterministic default ID for items with no identifiable content
-    :crypto.hash(:sha256, "no-content")
-    |> Base.encode16(case: :lower)
-    |> String.slice(0, 16)
+    # Cannot generate ID for items with no identifiable content
+    # Per user requirement: include the item anyway, don't exclude it
+    {:error, :no_identifiable_content}
   end
 end

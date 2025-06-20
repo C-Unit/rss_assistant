@@ -3,7 +3,7 @@ defmodule RssAssistant.IntegrationTest do
 
   import Mox
 
-  alias RssAssistant.{FeedParser, FeedFilter, RssItem}
+  alias RssAssistant.{FeedParser, FeedFilter, FeedItem}
 
   # Make sure mocks are verified when the test exits
   setup :verify_on_exit!
@@ -62,7 +62,7 @@ defmodule RssAssistant.IntegrationTest do
       [iran_item, sports_item, tech_item] = items
 
       # Verify the Iran item
-      assert %RssItem{
+      assert %FeedItem{
                title: "Europe to Hold Talks With Iran on Friday",
                description:
                  "European officials hope discussions will lead to de-escalation after devastating wars.",
@@ -72,13 +72,13 @@ defmodule RssAssistant.IntegrationTest do
              } = iran_item
 
       # Verify the sports item
-      assert %RssItem{
+      assert %FeedItem{
                title: "Sports: New Stadium Opens in Major City",
                categories: ["Sports", "Architecture"]
              } = sports_item
 
       # Verify the tech item
-      assert %RssItem{
+      assert %FeedItem{
                title: "Technology: AI Breakthrough Announced",
                categories: ["Technology", "Artificial Intelligence"]
              } = tech_item
@@ -87,7 +87,7 @@ defmodule RssAssistant.IntegrationTest do
     test "filters out sports content" do
       # Mock filter to exclude sports-related content
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn
-        %RssItem{title: title}, "filter out sports content" ->
+        %FeedItem{title: title}, "filter out sports content" ->
           not (title
                |> String.downcase()
                |> String.contains?("sports"))
@@ -124,7 +124,7 @@ defmodule RssAssistant.IntegrationTest do
 
     test "excludes all content when aggressive filtering" do
       # Mock filter to exclude everything
-      expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ -> false end)
+      expect(RssAssistant.Filter.Mock, :should_include?, 3, fn _, _ -> false end)
 
       assert {:ok, filtered_xml} =
                FeedFilter.filter_feed(@nytimes_sample_xml, "exclude everything")
