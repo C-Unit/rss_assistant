@@ -47,13 +47,13 @@ defmodule RssAssistantWeb.FilteredFeedController do
 
   def rss_feed(conn, %{"slug" => slug}) do
     filtered_feed = Repo.get_by!(FilteredFeed, slug: slug)
-    
+
     case fetch_and_filter_feed(filtered_feed) do
       {:ok, filtered_content, content_type} ->
         conn
         |> put_resp_content_type(content_type)
         |> send_resp(200, filtered_content)
-      
+
       {:error, _reason} ->
         conn
         |> put_status(:bad_gateway)
@@ -67,12 +67,14 @@ defmodule RssAssistantWeb.FilteredFeedController do
         case FeedFilter.filter_feed(feed_content, prompt) do
           {:ok, filtered_content} ->
             {:ok, filtered_content, content_type}
+
           {:error, _reason} ->
             # Fallback to original feed if filtering fails
             {:ok, feed_content, content_type}
         end
-      
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -81,10 +83,10 @@ defmodule RssAssistantWeb.FilteredFeedController do
       {:ok, %Req.Response{status: 200, body: body, headers: headers}} ->
         content_type = get_content_type(headers)
         {:ok, body, content_type}
-      
+
       {:ok, %Req.Response{status: status}} ->
         {:error, "HTTP #{status}"}
-      
+
       {:error, reason} ->
         {:error, reason}
     end

@@ -87,13 +87,13 @@ defmodule RssAssistant.FeedFilterTest do
       </rss>
       """
 
-
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ -> false end)
 
       assert {:ok, filtered_xml} = FeedFilter.filter_feed(rss_xml, "exclude all")
 
       refute filtered_xml =~ "Item 1"
-      assert filtered_xml =~ "<channel>"  # Channel metadata should still be present
+      # Channel metadata should still be present
+      assert filtered_xml =~ "<channel>"
     end
 
     test "handles invalid XML gracefully" do

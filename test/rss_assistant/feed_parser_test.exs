@@ -1,6 +1,6 @@
 defmodule RssAssistant.FeedParserTest do
   use ExUnit.Case, async: true
-  
+
   alias RssAssistant.{FeedParser, RssItem}
 
   describe "parse_feed/1" do
@@ -36,23 +36,23 @@ defmodule RssAssistant.FeedParserTest do
       [first_item, second_item] = items
 
       assert %RssItem{
-        id: "item-1",
-        title: "First Item",
-        description: "First item description",
-        link: "https://example.com/1",
-        pub_date: "Mon, 06 Sep 2021 16:45:00 GMT",
-        guid: "item-1",
-        categories: ["Tech", "News"]
-      } = first_item
+               id: "item-1",
+               title: "First Item",
+               description: "First item description",
+               link: "https://example.com/1",
+               pub_date: "Mon, 06 Sep 2021 16:45:00 GMT",
+               guid: "item-1",
+               categories: ["Tech", "News"]
+             } = first_item
 
       assert %RssItem{
-        id: "item-2",
-        title: "Second Item",
-        description: "Second item description",
-        link: "https://example.com/2",
-        guid: "item-2",
-        categories: []
-      } = second_item
+               id: "item-2",
+               title: "Second Item",
+               description: "Second item description",
+               link: "https://example.com/2",
+               guid: "item-2",
+               categories: []
+             } = second_item
     end
 
     test "parses Atom feed successfully" do
@@ -77,14 +77,14 @@ defmodule RssAssistant.FeedParserTest do
       [item] = items
 
       assert %RssItem{
-        id: "atom-entry-1",
-        title: "Atom Entry",
-        description: "Atom entry summary",
-        link: "https://example.com/atom/1",
-        pub_date: "2021-09-06T16:45:00Z",
-        guid: "atom-entry-1",
-        categories: ["Science"]
-      } = item
+               id: "atom-entry-1",
+               title: "Atom Entry",
+               description: "Atom entry summary",
+               link: "https://example.com/atom/1",
+               pub_date: "2021-09-06T16:45:00Z",
+               guid: "atom-entry-1",
+               categories: ["Science"]
+             } = item
     end
 
     test "handles invalid XML" do

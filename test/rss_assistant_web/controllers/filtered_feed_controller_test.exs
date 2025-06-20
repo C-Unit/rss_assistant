@@ -21,10 +21,10 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
       }
 
       conn = post(conn, ~p"/filtered_feeds", filtered_feed: valid_attrs)
-      
+
       assert %{slug: slug} = redirected_params(conn)
       assert redirected_to(conn) == ~p"/filtered_feeds/#{slug}"
-      
+
       filtered_feed = Repo.get_by(FilteredFeed, slug: slug)
       assert filtered_feed.url == "https://example.com/feed.xml"
       assert filtered_feed.prompt == "Filter out sports content"
@@ -34,7 +34,7 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
       invalid_attrs = %{url: "not-a-url", prompt: ""}
 
       conn = post(conn, ~p"/filtered_feeds", filtered_feed: invalid_attrs)
-      
+
       assert html_response(conn, 200) =~ "Create Filtered RSS Feed"
       assert html_response(conn, 200) =~ "must be a valid URL"
       assert html_response(conn, 200) =~ "can&#39;t be blank"
@@ -44,9 +44,9 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
   describe "GET /filtered_feeds/:slug" do
     test "shows filtered feed management page", %{conn: conn} do
       filtered_feed = create_filtered_feed()
-      
+
       conn = get(conn, ~p"/filtered_feeds/#{filtered_feed.slug}")
-      
+
       assert html_response(conn, 200) =~ "Manage Filtered RSS Feed"
       assert html_response(conn, 200) =~ filtered_feed.url
       assert html_response(conn, 200) =~ filtered_feed.prompt
@@ -63,25 +63,27 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
   describe "GET /filtered_feeds/:slug/rss" do
     test "serves RSS feed when original feed is accessible", %{conn: conn} do
       # Create a filtered feed pointing to NY Times RSS feed
-      filtered_feed = create_filtered_feed(%{
-        url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
-        prompt: "Filter out sports content"
-      })
-      
+      filtered_feed =
+        create_filtered_feed(%{
+          url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
+          prompt: "Filter out sports content"
+        })
+
       conn = get(conn, ~p"/filtered_feeds/#{filtered_feed.slug}/rss")
-      
+
       assert response_content_type(conn, :xml)
       assert conn.status == 200
     end
 
     test "returns error when original feed is not accessible", %{conn: conn} do
-      filtered_feed = create_filtered_feed(%{
-        url: "https://example.com/nonexistent-feed.xml",
-        prompt: "Filter out sports content"
-      })
-      
+      filtered_feed =
+        create_filtered_feed(%{
+          url: "https://example.com/nonexistent-feed.xml",
+          prompt: "Filter out sports content"
+        })
+
       conn = get(conn, ~p"/filtered_feeds/#{filtered_feed.slug}/rss")
-      
+
       assert conn.status == 502
       assert response(conn, 502) =~ "Error fetching RSS feed"
     end
@@ -96,16 +98,16 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
   describe "PATCH /filtered_feeds/:slug" do
     test "updates filtered feed with valid data", %{conn: conn} do
       filtered_feed = create_filtered_feed()
-      
+
       update_attrs = %{
         url: "https://updated.com/feed.xml",
         prompt: "Updated filter description"
       }
 
       conn = patch(conn, ~p"/filtered_feeds/#{filtered_feed.slug}", filtered_feed: update_attrs)
-      
+
       assert redirected_to(conn) == ~p"/filtered_feeds/#{filtered_feed.slug}"
-      
+
       updated_feed = Repo.get!(FilteredFeed, filtered_feed.id)
       assert updated_feed.url == "https://updated.com/feed.xml"
       assert updated_feed.prompt == "Updated filter description"
@@ -113,11 +115,11 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
 
     test "renders errors with invalid data", %{conn: conn} do
       filtered_feed = create_filtered_feed()
-      
+
       invalid_attrs = %{url: "not-a-url", prompt: ""}
 
       conn = patch(conn, ~p"/filtered_feeds/#{filtered_feed.slug}", filtered_feed: invalid_attrs)
-      
+
       assert html_response(conn, 200) =~ "Manage Filtered RSS Feed"
       assert html_response(conn, 200) =~ "must be a valid URL"
       assert html_response(conn, 200) =~ "can&#39;t be blank"
@@ -129,7 +131,7 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
       url: "https://example.com/feed.xml",
       prompt: "Filter out sports content"
     }
-    
+
     %FilteredFeed{}
     |> FilteredFeed.changeset(Map.merge(default_attrs, attrs))
     |> Repo.insert!()

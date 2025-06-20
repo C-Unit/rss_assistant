@@ -4,14 +4,14 @@ defmodule RssAssistant.RssItem do
   """
 
   @type t :: %__MODULE__{
-    id: String.t(),
-    title: String.t() | nil,
-    description: String.t() | nil,
-    link: String.t() | nil,
-    pub_date: String.t() | nil,
-    guid: String.t() | nil,
-    categories: [String.t()]
-  }
+          id: String.t(),
+          title: String.t() | nil,
+          description: String.t() | nil,
+          link: String.t() | nil,
+          pub_date: String.t() | nil,
+          guid: String.t() | nil,
+          categories: [String.t()]
+        }
 
   defstruct [
     :id,
@@ -25,7 +25,7 @@ defmodule RssAssistant.RssItem do
 
   @doc """
   Generates a unique ID for an RSS item.
-  
+
   Uses the guid if available, otherwise creates a hash from link and title.
   """
   def generate_id(%{guid: guid}) when is_binary(guid) and guid != "", do: guid

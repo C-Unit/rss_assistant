@@ -1,7 +1,7 @@
 defmodule RssAssistant.FeedParser do
   @moduledoc """
   Parses RSS and Atom feeds into structured RssItem data.
-  
+
   Supports both RSS 2.0 and Atom feed formats using SweetXml for parsing.
   """
 
@@ -10,9 +10,9 @@ defmodule RssAssistant.FeedParser do
 
   @doc """
   Parses an RSS or Atom feed XML string into a list of RssItem structs.
-  
+
   ## Examples
-  
+
       iex> xml = "<rss><channel><item><title>Test</title></item></channel></rss>"
       iex> RssAssistant.FeedParser.parse_feed(xml)
       {:ok, [%RssItem{title: "Test", ...}]}
@@ -24,10 +24,10 @@ defmodule RssAssistant.FeedParser do
   def parse_feed(xml_string) when is_binary(xml_string) do
     try do
       parsed_xml = parse(xml_string)
-      
+
       # Try RSS format first, then Atom
       items = parse_rss_items(parsed_xml) || parse_atom_entries(parsed_xml) || []
-      
+
       {:ok, items}
     rescue
       _error -> {:error, :invalid_xml}
@@ -79,10 +79,11 @@ defmodule RssAssistant.FeedParser do
   # Build an RssItem struct from parsed XML data
   defp build_rss_item(item_data) do
     # Use description/content field based on RSS vs Atom format
-    description = clean_text(item_data[:description]) || 
-                  clean_text(item_data[:content]) || 
-                  clean_text(item_data[:summary])
-    
+    description =
+      clean_text(item_data[:description]) ||
+        clean_text(item_data[:content]) ||
+        clean_text(item_data[:summary])
+
     item = %RssItem{
       title: clean_text(item_data[:title]),
       description: description,
@@ -91,13 +92,14 @@ defmodule RssAssistant.FeedParser do
       guid: clean_text(item_data[:guid]),
       categories: item_data[:categories] || []
     }
-    
+
     %{item | id: RssItem.generate_id(item)}
   end
 
   # Clean and normalize text content
   defp clean_text(nil), do: nil
   defp clean_text(""), do: nil
+
   defp clean_text(text) when is_binary(text) do
     text
     |> String.trim()

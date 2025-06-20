@@ -37,13 +37,15 @@ defmodule RssAssistant.FeedFilter do
 
   # Filter items using the configured filter implementation
   defp filter_items(items, prompt) do
-    filter_impl = Application.get_env(:rss_assistant, :filter_impl, RssAssistant.Filter.AlwaysInclude)
+    filter_impl =
+      Application.get_env(:rss_assistant, :filter_impl, RssAssistant.Filter.AlwaysInclude)
 
     Enum.filter(items, fn item ->
       try do
         filter_impl.should_include?(item, prompt)
       rescue
-        _error -> true  # Include item if filtering fails
+        # Include item if filtering fails
+        _error -> true
       end
     end)
   end
@@ -69,16 +71,18 @@ defmodule RssAssistant.FeedFilter do
   # Rebuild RSS 2.0 format feed
   defp rebuild_rss_feed(parsed_xml, filtered_items) do
     # Extract channel metadata
-    channel_info = xpath(parsed_xml,
-      ~x"//channel",
-      title: ~x"./title/text()"s,
-      description: ~x"./description/text()"s,
-      link: ~x"./link/text()"s,
-      language: ~x"./language/text()"s,
-      last_build_date: ~x"./lastBuildDate/text()"s,
-      pub_date: ~x"./pubDate/text()"s,
-      copyright: ~x"./copyright/text()"s
-    )
+    channel_info =
+      xpath(
+        parsed_xml,
+        ~x"//channel",
+        title: ~x"./title/text()"s,
+        description: ~x"./description/text()"s,
+        link: ~x"./link/text()"s,
+        language: ~x"./language/text()"s,
+        last_build_date: ~x"./lastBuildDate/text()"s,
+        pub_date: ~x"./pubDate/text()"s,
+        copyright: ~x"./copyright/text()"s
+      )
 
     # Build new RSS XML
     rss_xml = build_rss_xml(channel_info, filtered_items)
@@ -88,14 +92,16 @@ defmodule RssAssistant.FeedFilter do
   # Rebuild Atom format feed
   defp rebuild_atom_feed(parsed_xml, filtered_items) do
     # Extract feed metadata
-    feed_info = xpath(parsed_xml,
-      ~x"//feed",
-      title: ~x"./title/text()"s,
-      subtitle: ~x"./subtitle/text()"s,
-      link: ~x"./link[@rel='alternate']/@href"s,
-      id: ~x"./id/text()"s,
-      updated: ~x"./updated/text()"s
-    )
+    feed_info =
+      xpath(
+        parsed_xml,
+        ~x"//feed",
+        title: ~x"./title/text()"s,
+        subtitle: ~x"./subtitle/text()"s,
+        link: ~x"./link[@rel='alternate']/@href"s,
+        id: ~x"./id/text()"s,
+        updated: ~x"./updated/text()"s
+      )
 
     # Build new Atom XML
     atom_xml = build_atom_xml(feed_info, filtered_items)
@@ -104,9 +110,10 @@ defmodule RssAssistant.FeedFilter do
 
   # Build RSS XML structure
   defp build_rss_xml(channel_info, items) do
-    items_xml = items
-    |> Enum.map(&build_rss_item_xml/1)
-    |> Enum.join("\n")
+    items_xml =
+      items
+      |> Enum.map(&build_rss_item_xml/1)
+      |> Enum.join("\n")
 
     """
     <?xml version="1.0" encoding="UTF-8"?>
@@ -127,9 +134,10 @@ defmodule RssAssistant.FeedFilter do
 
   # Build Atom XML structure
   defp build_atom_xml(feed_info, items) do
-    entries_xml = items
-    |> Enum.map(&build_atom_entry_xml/1)
-    |> Enum.join("\n")
+    entries_xml =
+      items
+      |> Enum.map(&build_atom_entry_xml/1)
+      |> Enum.join("\n")
 
     """
     <?xml version="1.0" encoding="UTF-8"?>
@@ -146,9 +154,10 @@ defmodule RssAssistant.FeedFilter do
 
   # Build individual RSS item XML
   defp build_rss_item_xml(%RssItem{} = item) do
-    categories_xml = item.categories
-    |> Enum.map(fn cat -> "<category>#{escape_xml(cat)}</category>" end)
-    |> Enum.join("\n")
+    categories_xml =
+      item.categories
+      |> Enum.map(fn cat -> "<category>#{escape_xml(cat)}</category>" end)
+      |> Enum.join("\n")
 
     """
         <item>
@@ -177,6 +186,7 @@ defmodule RssAssistant.FeedFilter do
 
   # Escape XML special characters
   defp escape_xml(nil), do: ""
+
   defp escape_xml(text) when is_binary(text) do
     text
     |> String.replace("&", "&amp;")

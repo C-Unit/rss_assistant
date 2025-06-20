@@ -63,23 +63,25 @@ defmodule RssAssistant.IntegrationTest do
 
       # Verify the Iran item
       assert %RssItem{
-        title: "Europe to Hold Talks With Iran on Friday",
-        description: "European officials hope discussions will lead to de-escalation after devastating wars.",
-        link: "https://www.nytimes.com/2025/06/19/world/europe/europe-iran-israel-war-talks-nuclear.html",
-        categories: ["International Relations", "War and Armed Conflicts"]
-      } = iran_item
+               title: "Europe to Hold Talks With Iran on Friday",
+               description:
+                 "European officials hope discussions will lead to de-escalation after devastating wars.",
+               link:
+                 "https://www.nytimes.com/2025/06/19/world/europe/europe-iran-israel-war-talks-nuclear.html",
+               categories: ["International Relations", "War and Armed Conflicts"]
+             } = iran_item
 
       # Verify the sports item
       assert %RssItem{
-        title: "Sports: New Stadium Opens in Major City",
-        categories: ["Sports", "Architecture"]
-      } = sports_item
+               title: "Sports: New Stadium Opens in Major City",
+               categories: ["Sports", "Architecture"]
+             } = sports_item
 
       # Verify the tech item
       assert %RssItem{
-        title: "Technology: AI Breakthrough Announced",
-        categories: ["Technology", "Artificial Intelligence"]
-      } = tech_item
+               title: "Technology: AI Breakthrough Announced",
+               categories: ["Technology", "Artificial Intelligence"]
+             } = tech_item
     end
 
     test "filters out sports content" do
@@ -87,11 +89,12 @@ defmodule RssAssistant.IntegrationTest do
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn
         %RssItem{title: title}, "filter out sports content" ->
           not (title
-              |> String.downcase()
-              |> String.contains?("sports"))
+               |> String.downcase()
+               |> String.contains?("sports"))
       end)
 
-      assert {:ok, filtered_xml} = FeedFilter.filter_feed(@nytimes_sample_xml, "filter out sports content")
+      assert {:ok, filtered_xml} =
+               FeedFilter.filter_feed(@nytimes_sample_xml, "filter out sports content")
 
       # Should include Iran and Tech stories
       assert filtered_xml =~ "Europe to Hold Talks With Iran on Friday"
@@ -110,7 +113,8 @@ defmodule RssAssistant.IntegrationTest do
       # Mock filter to include everything
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ -> true end)
 
-      assert {:ok, filtered_xml} = FeedFilter.filter_feed(@nytimes_sample_xml, "include everything")
+      assert {:ok, filtered_xml} =
+               FeedFilter.filter_feed(@nytimes_sample_xml, "include everything")
 
       # Should include all stories
       assert filtered_xml =~ "Europe to Hold Talks With Iran on Friday"
@@ -122,7 +126,8 @@ defmodule RssAssistant.IntegrationTest do
       # Mock filter to exclude everything
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ -> false end)
 
-      assert {:ok, filtered_xml} = FeedFilter.filter_feed(@nytimes_sample_xml, "exclude everything")
+      assert {:ok, filtered_xml} =
+               FeedFilter.filter_feed(@nytimes_sample_xml, "exclude everything")
 
       # Should exclude all stories
       refute filtered_xml =~ "Europe to Hold Talks With Iran on Friday"
