@@ -4,7 +4,8 @@
       "Bash(mix test)",
       "Bash(mix phx.routes:*)",
       "Bash(mix test:*)",
-      "Bash(mix deps.get:*)"
+      "Bash(mix deps.get:*)",
+      "Bash(mix compile)"
     ],
     "deny": []
   }

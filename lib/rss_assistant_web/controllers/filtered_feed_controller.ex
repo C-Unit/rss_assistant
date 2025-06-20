@@ -3,6 +3,7 @@ defmodule RssAssistantWeb.FilteredFeedController do
 
   alias RssAssistant.FilteredFeed
   alias RssAssistant.Repo
+  alias RssAssistant.FeedFilter
 
   def new(conn, _params) do
     changeset = FilteredFeed.changeset(%FilteredFeed{}, %{})
@@ -47,16 +48,31 @@ defmodule RssAssistantWeb.FilteredFeedController do
   def rss_feed(conn, %{"slug" => slug}) do
     filtered_feed = Repo.get_by!(FilteredFeed, slug: slug)
     
-    case fetch_original_feed(filtered_feed.url) do
-      {:ok, feed_content, content_type} ->
+    case fetch_and_filter_feed(filtered_feed) do
+      {:ok, filtered_content, content_type} ->
         conn
         |> put_resp_content_type(content_type)
-        |> send_resp(200, feed_content)
+        |> send_resp(200, filtered_content)
       
       {:error, _reason} ->
         conn
         |> put_status(:bad_gateway)
         |> text("Error fetching RSS feed")
+    end
+  end
+
+  defp fetch_and_filter_feed(%FilteredFeed{url: url, prompt: prompt}) do
+    case fetch_original_feed(url) do
+      {:ok, feed_content, content_type} ->
+        case FeedFilter.filter_feed(feed_content, prompt) do
+          {:ok, filtered_content} ->
+            {:ok, filtered_content, content_type}
+          {:error, _reason} ->
+            # Fallback to original feed if filtering fails
+            {:ok, feed_content, content_type}
+        end
+      
+      error -> error
     end
   end
 

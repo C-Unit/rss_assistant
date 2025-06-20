@@ -9,7 +9,8 @@ import Config
 
 config :rss_assistant,
   ecto_repos: [RssAssistant.Repo],
-  generators: [timestamp_type: :utc_datetime]
+  generators: [timestamp_type: :utc_datetime],
+  filter_impl: RssAssistant.Filter.AlwaysInclude
 
 # Configures the endpoint
 config :rss_assistant, RssAssistantWeb.Endpoint,
