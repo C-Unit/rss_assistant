@@ -10,6 +10,9 @@ import Config
 config :rss_assistant,
   ecto_repos: [RssAssistant.Repo],
   generators: [timestamp_type: :utc_datetime],
+  # Available filter implementations:
+  # - RssAssistant.Filter.AlwaysInclude (default, includes all items)
+  # - RssAssistant.Filter.Gemini (AI-powered filtering, requires GEMINI_API_KEY)
   filter_impl: RssAssistant.Filter.AlwaysInclude
 
 # Configures the endpoint
