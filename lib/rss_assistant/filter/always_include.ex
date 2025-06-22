@@ -8,8 +8,10 @@ defmodule RssAssistant.Filter.AlwaysInclude do
 
   @behaviour RssAssistant.Filter
 
-  alias RssAssistant.FeedItem
+  alias RssAssistant.{FeedItem, FeedItemDecision}
 
   @impl RssAssistant.Filter
-  def should_include?(%FeedItem{}, _prompt), do: true
+  def should_include?(%FeedItem{} = item, _prompt) do
+    FeedItemDecision.new(item.generated_id, true, "Always include filter")
+  end
 end

@@ -61,10 +61,10 @@ defmodule RssAssistantWeb.FilteredFeedController do
     end
   end
 
-  defp fetch_and_filter_feed(%FilteredFeed{url: url, prompt: prompt}) do
+  defp fetch_and_filter_feed(%FilteredFeed{id: id, url: url, prompt: prompt}) do
     case fetch_original_feed(url) do
       {:ok, feed_content, content_type} ->
-        case FeedFilter.filter_feed(feed_content, prompt) do
+        case FeedFilter.filter_feed(feed_content, prompt, id) do
           {:ok, filtered_content} ->
             {:ok, filtered_content, content_type}
 

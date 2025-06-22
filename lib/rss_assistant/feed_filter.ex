@@ -7,7 +7,8 @@ defmodule RssAssistant.FeedFilter do
   """
 
   import SweetXml
-  alias RssAssistant.{FeedParser, FeedItem}
+  import Ecto.Query
+  alias RssAssistant.{FeedParser, FeedItem, FeedItemDecision, FeedItemDecisionSchema, Repo}
 
   @doc """
   Filters an RSS feed based on a user prompt.
@@ -16,16 +17,17 @@ defmodule RssAssistant.FeedFilter do
 
     * `xml_content` - The original RSS/Atom feed XML content
     * `prompt` - The user's filtering prompt
+    * `filtered_feed_id` - The ID of the filtered feed for caching decisions
 
   ## Returns
 
     * `{:ok, filtered_xml}` - Successfully filtered feed
     * `{:error, reason}` - Error occurred, original feed should be returned
   """
-  @spec filter_feed(String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
-  def filter_feed(xml_content, prompt) when is_binary(xml_content) and is_binary(prompt) do
+  @spec filter_feed(String.t(), String.t(), integer()) :: {:ok, String.t()} | {:error, term()}
+  def filter_feed(xml_content, prompt, filtered_feed_id) when is_binary(xml_content) and is_binary(prompt) and is_integer(filtered_feed_id) do
     with {:ok, items} <- FeedParser.parse_feed(xml_content),
-         filtered_items <- filter_items(items, prompt),
+         filtered_items <- filter_items(items, prompt, filtered_feed_id),
          {:ok, filtered_xml} <- rebuild_feed(xml_content, filtered_items) do
       {:ok, filtered_xml}
     else
@@ -33,21 +35,78 @@ defmodule RssAssistant.FeedFilter do
     end
   end
 
-  def filter_feed(_, _), do: {:error, :invalid_input}
+  def filter_feed(_, _, _), do: {:error, :invalid_input}
 
-  # Filter items using the configured filter implementation
-  defp filter_items(items, prompt) do
+  # Filter items using the configured filter implementation with caching
+  defp filter_items(items, prompt, filtered_feed_id) do
     filter_impl =
       Application.get_env(:rss_assistant, :filter_impl, RssAssistant.Filter.AlwaysInclude)
 
     Enum.filter(items, fn item ->
       try do
-        filter_impl.should_include?(item, prompt)
+        case get_or_create_decision(item, prompt, filtered_feed_id, filter_impl) do
+          %FeedItemDecision{should_include: should_include} -> should_include
+          _ -> true  # Default to include if decision struct is invalid
+        end
       rescue
         # Include item if filtering fails
         _error -> true
       end
     end)
+  end
+
+  # Get cached decision or create new one
+  defp get_or_create_decision(%FeedItem{generated_id: nil}, _prompt, _filtered_feed_id, _filter_impl) do
+    # No generated_id, include by default without evaluation or caching
+    %FeedItemDecision{should_include: true, reasoning: "No generated_id, included by default"}
+  end
+
+
+  defp get_or_create_decision(%FeedItem{generated_id: item_id} = item, prompt, filtered_feed_id, filter_impl) do
+    case get_cached_decision(item_id, filtered_feed_id) do
+      nil ->
+        # No cached decision, call filter and store result
+        decision = filter_impl.should_include?(item, prompt)
+        store_decision(decision, filtered_feed_id)
+        decision
+
+      cached_decision ->
+        # Return cached decision
+        cached_decision
+    end
+  end
+
+  # Retrieve cached decision from database
+  defp get_cached_decision(item_id, filtered_feed_id) do
+    query = from d in FeedItemDecisionSchema,
+      where: d.item_id == ^item_id and d.filtered_feed_id == ^filtered_feed_id,
+      select: d
+
+    case Repo.one(query) do
+      nil -> nil
+      decision_schema ->
+        %FeedItemDecision{
+          item_id: decision_schema.item_id,
+          should_include: decision_schema.should_include,
+          reasoning: decision_schema.reasoning,
+          timestamp: decision_schema.inserted_at
+        }
+    end
+  end
+
+  # Store decision in database
+  defp store_decision(%FeedItemDecision{} = decision, filtered_feed_id) do
+    changeset = FeedItemDecisionSchema.changeset(%FeedItemDecisionSchema{}, %{
+      item_id: decision.item_id,
+      should_include: decision.should_include,
+      reasoning: decision.reasoning,
+      filtered_feed_id: filtered_feed_id
+    })
+
+    case Repo.insert(changeset) do
+      {:ok, _} -> :ok
+      {:error, _} -> :error  # Ignore storage errors, don't fail the filtering
+    end
   end
 
   # Rebuild the RSS/Atom feed with only the filtered items

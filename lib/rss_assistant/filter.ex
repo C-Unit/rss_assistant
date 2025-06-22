@@ -6,7 +6,7 @@ defmodule RssAssistant.Filter do
   to determine whether an item should be included in the filtered feed.
   """
 
-  alias RssAssistant.FeedItem
+  alias RssAssistant.{FeedItem, FeedItemDecision}
 
   @doc """
   Determines whether an RSS item should be included in the filtered feed.
@@ -18,8 +18,7 @@ defmodule RssAssistant.Filter do
 
   ## Returns
 
-    * `true` if the item should be included
-    * `false` if the item should be filtered out
+    * `%FeedItemDecision{}` struct containing the decision, reasoning, and item_id
   """
-  @callback should_include?(item :: FeedItem.t(), prompt :: String.t()) :: boolean()
+  @callback should_include?(item :: FeedItem.t(), prompt :: String.t()) :: FeedItemDecision.t()
 end

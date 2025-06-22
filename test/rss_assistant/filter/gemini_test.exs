@@ -3,7 +3,7 @@ defmodule RssAssistant.Filter.GeminiTest do
   import ExUnit.CaptureLog
 
   alias RssAssistant.Filter.Gemini
-  alias RssAssistant.FeedItem
+  alias RssAssistant.{FeedItem, FeedItemDecision}
 
   describe "should_include?/2" do
     test "returns true when Gemini API is not configured (fallback behavior)" do
@@ -12,6 +12,7 @@ defmodule RssAssistant.Filter.GeminiTest do
       Application.put_env(:gemini_ex, :api_key, nil)
 
       item = %FeedItem{
+        generated_id: "test-article-123",
         title: "Test Article",
         description: "A test article about technology",
         categories: ["tech"]
@@ -19,7 +20,8 @@ defmodule RssAssistant.Filter.GeminiTest do
 
       # Should fall back to including the item when API is not configured
       capture_log(fn ->
-        assert Gemini.should_include?(item, "filter out sports content") == true
+        result = Gemini.should_include?(item, "filter out sports content")
+        assert %FeedItemDecision{should_include: true} = result
       end)
 
       # Restore original config
@@ -32,6 +34,7 @@ defmodule RssAssistant.Filter.GeminiTest do
       Application.put_env(:gemini_ex, :api_key, nil)
 
       item = %FeedItem{
+        generated_id: "empty-item-456",
         title: nil,
         description: nil,
         categories: []
@@ -39,7 +42,8 @@ defmodule RssAssistant.Filter.GeminiTest do
 
       # Should still work with minimal data
       capture_log(fn ->
-        assert Gemini.should_include?(item, "any filter") == true
+        result = Gemini.should_include?(item, "any filter")
+        assert %FeedItemDecision{should_include: true} = result
       end)
 
       # Restore original config
@@ -52,20 +56,25 @@ defmodule RssAssistant.Filter.GeminiTest do
       Application.put_env(:gemini_ex, :api_key, nil)
 
       item_with_categories = %FeedItem{
+        generated_id: "categories-item-789",
         title: "Article with categories",
         description: "Description",
         categories: ["Technology", "AI", "Programming"]
       }
 
       item_without_categories = %FeedItem{
+        generated_id: "no-categories-item-012",
         title: "Article without categories",
         description: "Description",
         categories: []
       }
 
       capture_log(fn ->
-        assert Gemini.should_include?(item_with_categories, "filter tech") == true
-        assert Gemini.should_include?(item_without_categories, "filter tech") == true
+        result1 = Gemini.should_include?(item_with_categories, "filter tech")
+        assert %FeedItemDecision{should_include: true} = result1
+        
+        result2 = Gemini.should_include?(item_without_categories, "filter tech")
+        assert %FeedItemDecision{should_include: true} = result2
       end)
 
       # Restore original config
@@ -82,6 +91,7 @@ defmodule RssAssistant.Filter.GeminiTest do
 
         _api_key ->
           item = %FeedItem{
+            generated_id: "sports-championship-345",
             title: "Breaking: Local Sports Team Wins Championship",
             description: "The hometown football team secured a decisive victory last night...",
             categories: ["Sports", "Local News"]
@@ -90,8 +100,9 @@ defmodule RssAssistant.Filter.GeminiTest do
           # Test filtering out sports content
           result = Gemini.should_include?(item, "filter out all sports-related content")
           
-          # Result should be a boolean (either true or false)
-          assert is_boolean(result)
+          # Result should be a FeedItemDecision
+          assert %FeedItemDecision{should_include: should_include} = result
+          assert is_boolean(should_include)
           
           # For sports content with "filter out sports" prompt, 
           # we expect it might be filtered out (false), but due to API variability
@@ -109,6 +120,7 @@ defmodule RssAssistant.Filter.GeminiTest do
 
         _api_key ->
           item = %FeedItem{
+            generated_id: "renewable-energy-678",
             title: "New Technology Breakthrough in Renewable Energy",
             description: "Scientists have developed a new solar panel technology...",
             categories: ["Technology", "Environment"]
@@ -117,8 +129,9 @@ defmodule RssAssistant.Filter.GeminiTest do
           # Test that non-sports content is included when filtering sports
           result = Gemini.should_include?(item, "filter out all sports-related content")
           
-          # Should likely be true for non-sports content, but we just verify boolean response
-          assert is_boolean(result)
+          # Should likely be true for non-sports content, but we just verify valid decision
+          assert %FeedItemDecision{should_include: should_include} = result
+          assert is_boolean(should_include)
       end
     end
   end
@@ -127,6 +140,7 @@ defmodule RssAssistant.Filter.GeminiTest do
     test "builds appropriate prompts for filtering logic" do
       # This is more of a documentation test to show how the prompts are structured
       item = %FeedItem{
+        generated_id: "sample-article-901",
         title: "Sample Article",
         description: "Sample description",
         categories: ["Category1", "Category2"],
@@ -141,7 +155,8 @@ defmodule RssAssistant.Filter.GeminiTest do
       capture_log(fn ->
         # Should handle the full item data without errors
         result = Gemini.should_include?(item, "detailed filtering criteria")
-        assert is_boolean(result)
+        assert %FeedItemDecision{should_include: should_include} = result
+        assert is_boolean(should_include)
       end)
 
       # Restore original config

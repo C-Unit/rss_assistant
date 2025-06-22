@@ -14,20 +14,20 @@ defmodule RssAssistant.Filter.Gemini do
 
   @behaviour RssAssistant.Filter
 
-  alias RssAssistant.FeedItem
+  alias RssAssistant.{FeedItem, FeedItemDecision}
   require Logger
   @model "gemini-2.5-flash-lite-preview-06-17"
 
   @impl RssAssistant.Filter
   def should_include?(%FeedItem{} = item, prompt) when is_binary(prompt) do
     case analyze_with_gemini(item, prompt) do
-      {:ok, should_include} when is_boolean(should_include) ->
-        should_include
+      {:ok, {should_include, reasoning}} when is_boolean(should_include) ->
+        FeedItemDecision.new(item.generated_id, should_include, reasoning)
 
       {:error, reason} ->
         Logger.warning("Gemini filter failed: #{inspect(reason)}, including item by default")
         # Fail-safe: include item when API fails
-        true
+        FeedItemDecision.new(item.generated_id, true, "API failed, included by default")
     end
   end
 
@@ -37,8 +37,8 @@ defmodule RssAssistant.Filter.Gemini do
     full_prompt = "#{system_prompt}\n\n#{user_prompt}"
 
     with {:ok, json_string} <- make_gemini_request(full_prompt),
-         {:ok, should_include} <- parse_json_response(json_string) do
-      {:ok, should_include}
+         {:ok, {should_include, reasoning}} <- parse_json_response(json_string) do
+      {:ok, {should_include, reasoning}}
     end
   end
 
@@ -123,12 +123,12 @@ defmodule RssAssistant.Filter.Gemini do
       {:ok, %{"should_include" => should_include, "reasoning" => reasoning}}
       when is_boolean(should_include) and is_binary(reasoning) ->
         Logger.debug("Gemini filtering decision: #{should_include}, reasoning: #{reasoning}")
-        {:ok, should_include}
+        {:ok, {should_include, reasoning}}
 
       {:ok, %{"should_include" => should_include}} when is_boolean(should_include) ->
         # Handle case where reasoning might be missing
         Logger.debug("Gemini filtering decision: #{should_include}")
-        {:ok, should_include}
+        {:ok, {should_include, "No reasoning provided"}}
 
       {:ok, parsed} ->
         Logger.warning("Unexpected Gemini JSON format: #{inspect(parsed)}")

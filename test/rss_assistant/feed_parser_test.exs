@@ -37,7 +37,7 @@ defmodule RssAssistant.FeedParserTest do
       [first_item, second_item] = items
 
       assert %FeedItem{
-               id: "item-1",
+               generated_id: "item-1",
                title: "First Item",
                description: "First item description",
                link: "https://example.com/1",
@@ -47,7 +47,7 @@ defmodule RssAssistant.FeedParserTest do
              } = first_item
 
       assert %FeedItem{
-               id: "item-2",
+               generated_id: "item-2",
                title: "Second Item",
                description: "Second item description",
                link: "https://example.com/2",
@@ -78,7 +78,7 @@ defmodule RssAssistant.FeedParserTest do
       [item] = items
 
       assert %FeedItem{
-               id: "atom-entry-1",
+               generated_id: "atom-entry-1",
                title: "Atom Entry",
                description: "Atom entry summary",
                link: "https://example.com/atom/1",
