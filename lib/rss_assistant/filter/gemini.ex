@@ -16,6 +16,7 @@ defmodule RssAssistant.Filter.Gemini do
 
   alias RssAssistant.FeedItem
   require Logger
+  @model "gemini-2.5-flash-lite-preview-06-17"
 
   @impl RssAssistant.Filter
   def should_include?(%FeedItem{} = item, prompt) when is_binary(prompt) do
@@ -87,7 +88,7 @@ defmodule RssAssistant.Filter.Gemini do
             "description" => "Whether the feed item should be included in the filtered feed"
           },
           "reasoning" => %{
-            "type" => "string", 
+            "type" => "string",
             "description" => "Brief explanation for the filtering decision"
           }
         },
@@ -98,7 +99,7 @@ defmodule RssAssistant.Filter.Gemini do
     }
 
     # Use the Gemini client to generate structured content - handle exceptions
-    with {:ok, json_string} when is_binary(json_string) <- 
+    with {:ok, json_string} when is_binary(json_string) <-
            safe_gemini_call(prompt, generation_config) do
       {:ok, json_string}
     else
@@ -108,7 +109,7 @@ defmodule RssAssistant.Filter.Gemini do
   end
 
   defp safe_gemini_call(prompt, generation_config) do
-    Gemini.Generate.text(prompt, generation_config: generation_config)
+    Gemini.Generate.text(prompt, generation_config: generation_config, model: @model)
   rescue
     error -> {:error, {:request_failed, error}}
   catch
@@ -117,9 +118,9 @@ defmodule RssAssistant.Filter.Gemini do
 
   defp parse_json_response(json_string) when is_binary(json_string) do
     Logger.debug("Parsing JSON response: #{inspect(json_string)}")
-    
+
     case Jason.decode(json_string) do
-      {:ok, %{"should_include" => should_include, "reasoning" => reasoning}} 
+      {:ok, %{"should_include" => should_include, "reasoning" => reasoning}}
       when is_boolean(should_include) and is_binary(reasoning) ->
         Logger.debug("Gemini filtering decision: #{should_include}, reasoning: #{reasoning}")
         {:ok, should_include}
