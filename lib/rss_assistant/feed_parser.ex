@@ -128,13 +128,13 @@ defmodule RssAssistant.FeedParser do
 
     # Handle both success and error cases for ID generation
     # Per user requirement: include items even when ID generation fails
-    id =
+    generated_id =
       case FeedItem.generate_id(item) do
         {:ok, generated_id} -> generated_id
         {:error, :no_identifiable_content} -> nil
       end
 
-    %{item | id: id}
+    %{item | generated_id: generated_id}
   end
 
   # Clean and normalize text content

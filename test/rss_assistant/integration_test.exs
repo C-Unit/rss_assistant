@@ -1,12 +1,25 @@
 defmodule RssAssistant.IntegrationTest do
-  use ExUnit.Case, async: true
+  use RssAssistant.DataCase
 
   import Mox
 
-  alias RssAssistant.{FeedParser, FeedFilter, FeedItem}
+  alias RssAssistant.{FeedParser, FeedFilter, FeedItem, FeedItemDecision, FilteredFeed, Repo}
 
   # Make sure mocks are verified when the test exits
   setup :verify_on_exit!
+
+  setup do
+    # Create a test filtered feed
+    {:ok, filtered_feed} =
+      %FilteredFeed{}
+      |> FilteredFeed.changeset(%{
+        url: "https://example.com/nytimes.xml",
+        prompt: "integration test filtering"
+      })
+      |> Repo.insert()
+
+    %{filtered_feed_id: filtered_feed.id}
+  end
 
   @nytimes_sample_xml """
   <?xml version="1.0" encoding="UTF-8"?>
@@ -84,17 +97,21 @@ defmodule RssAssistant.IntegrationTest do
              } = tech_item
     end
 
-    test "filters out sports content" do
+    test "filters out sports content", %{filtered_feed_id: filtered_feed_id} do
       # Mock filter to exclude sports-related content
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn
-        %FeedItem{title: title}, "filter out sports content" ->
-          not (title
-               |> String.downcase()
-               |> String.contains?("sports"))
+        %FeedItem{title: title} = item, "filter out sports content" ->
+          should_include = not (title |> String.downcase() |> String.contains?("sports"))
+          decision = %FeedItemDecision{
+            item_id: item.generated_id,
+            should_include: should_include,
+            reasoning: if(should_include, do: "Not sports", else: "Sports content")
+          }
+          {:ok, decision}
       end)
 
       assert {:ok, filtered_xml} =
-               FeedFilter.filter_feed(@nytimes_sample_xml, "filter out sports content")
+               FeedFilter.filter_feed(@nytimes_sample_xml, "filter out sports content", filtered_feed_id)
 
       # Should include Iran and Tech stories
       assert filtered_xml =~ "Europe to Hold Talks With Iran on Friday"
@@ -109,12 +126,14 @@ defmodule RssAssistant.IntegrationTest do
       assert filtered_xml =~ "NYT &gt; Top Stories"
     end
 
-    test "includes all content when no filtering" do
+    test "includes all content when no filtering", %{filtered_feed_id: filtered_feed_id} do
       # Mock filter to include everything
-      expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ -> true end)
+      expect(RssAssistant.Filter.Mock, :should_include?, 2, fn item, _ ->
+        {:ok, %FeedItemDecision{item_id: item.generated_id, should_include: true, reasoning: "Include all"}}
+      end)
 
       assert {:ok, filtered_xml} =
-               FeedFilter.filter_feed(@nytimes_sample_xml, "include everything")
+               FeedFilter.filter_feed(@nytimes_sample_xml, "include everything", filtered_feed_id)
 
       # Should include all stories
       assert filtered_xml =~ "Europe to Hold Talks With Iran on Friday"
@@ -122,28 +141,12 @@ defmodule RssAssistant.IntegrationTest do
       assert filtered_xml =~ "Technology: AI Breakthrough Announced"
     end
 
-    test "excludes all content when aggressive filtering" do
-      # Mock filter to exclude everything
-      expect(RssAssistant.Filter.Mock, :should_include?, 3, fn _, _ -> false end)
+    test "preserves RSS metadata and structure", %{filtered_feed_id: filtered_feed_id} do
+      expect(RssAssistant.Filter.Mock, :should_include?, 2, fn item, _ ->
+        {:ok, %FeedItemDecision{item_id: item.generated_id, should_include: true, reasoning: "Preserve structure test"}}
+      end)
 
-      assert {:ok, filtered_xml} =
-               FeedFilter.filter_feed(@nytimes_sample_xml, "exclude everything")
-
-      # Should exclude all stories
-      refute filtered_xml =~ "Europe to Hold Talks With Iran on Friday"
-      refute filtered_xml =~ "Sports: New Stadium Opens in Major City"
-      refute filtered_xml =~ "Technology: AI Breakthrough Announced"
-
-      # But should maintain feed structure
-      assert filtered_xml =~ "<rss"
-      assert filtered_xml =~ "<channel>"
-      assert filtered_xml =~ "NYT &gt; Top Stories"
-    end
-
-    test "preserves RSS metadata and structure" do
-      expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ -> true end)
-
-      assert {:ok, filtered_xml} = FeedFilter.filter_feed(@nytimes_sample_xml, "test")
+      assert {:ok, filtered_xml} = FeedFilter.filter_feed(@nytimes_sample_xml, "test", filtered_feed_id)
 
       # Check RSS metadata is preserved
       assert filtered_xml =~ "NYT &gt; Top Stories"

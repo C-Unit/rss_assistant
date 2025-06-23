@@ -4,7 +4,7 @@ defmodule RssAssistant.FeedItem do
   """
 
   @type t :: %__MODULE__{
-          id: String.t(),
+          generated_id: String.t() | nil,
           title: String.t() | nil,
           description: String.t() | nil,
           link: String.t() | nil,
@@ -14,7 +14,7 @@ defmodule RssAssistant.FeedItem do
         }
 
   defstruct [
-    :id,
+    :generated_id,
     :title,
     :description,
     :link,

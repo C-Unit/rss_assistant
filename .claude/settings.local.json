@@ -5,7 +5,11 @@
       "Bash(mix phx.routes:*)",
       "Bash(mix test:*)",
       "Bash(mix deps.get:*)",
-      "Bash(mix compile)"
+      "Bash(mix compile)",
+      "WebFetch(domain:hexdocs.pm)",
+      "Bash(mix hex.info:*)",
+      "Bash(mix ecto.gen.migration:*)",
+      "Bash(mix ecto.migrate:*)"
     ],
     "deny": []
   }
