@@ -18,7 +18,9 @@ defmodule RssAssistant.Filter do
 
   ## Returns
 
-    * `%FeedItemDecision{}` struct containing the decision, reasoning, and item_id
+    * `{:ok, %FeedItemDecision{}}` - Successful decision that should be cached
+    * `{:error, %FeedItemDecision{}}` - Fallback decision that should NOT be cached
   """
-  @callback should_include?(item :: FeedItem.t(), prompt :: String.t()) :: FeedItemDecision.t()
+  @callback should_include?(item :: FeedItem.t(), prompt :: String.t()) :: 
+    {:ok, FeedItemDecision.t()} | {:error, FeedItemDecision.t()}
 end

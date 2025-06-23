@@ -65,10 +65,17 @@ defmodule RssAssistant.FeedFilter do
   defp get_or_create_decision(%FeedItem{generated_id: item_id} = item, prompt, filtered_feed_id, filter_impl) do
     case get_cached_decision(item_id, filtered_feed_id) do
       nil ->
-        # No cached decision, call filter and store result
-        decision = filter_impl.should_include?(item, prompt)
-        store_decision(decision, filtered_feed_id)
-        decision
+        # No cached decision, call filter implementation
+        case filter_impl.should_include?(item, prompt) do
+          {:ok, decision} ->
+            # Successful decision, store it and return
+            store_decision(decision, filtered_feed_id)
+            decision
+          
+          {:error, fallback_decision} ->
+            # Fallback decision due to API failure, don't store, just return
+            fallback_decision
+        end
 
       cached_decision ->
         # Return cached decision

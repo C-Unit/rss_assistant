@@ -49,9 +49,9 @@ defmodule RssAssistant.FeedFilterTest do
       # Mock the filter to include first item, exclude second
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn
         %FeedItem{title: "Include This"}, "test prompt" -> 
-          %FeedItemDecision{item_id: "include-1", should_include: true, reasoning: "Should include"}
+          {:ok, %FeedItemDecision{item_id: "include-1", should_include: true, reasoning: "Should include"}}
         %FeedItem{title: "Exclude This"}, "test prompt" -> 
-          %FeedItemDecision{item_id: "exclude-1", should_include: false, reasoning: "Should exclude"}
+          {:ok, %FeedItemDecision{item_id: "exclude-1", should_include: false, reasoning: "Should exclude"}}
       end)
 
       assert {:ok, filtered_xml} = FeedFilter.filter_feed(rss_xml, "test prompt", filtered_feed_id)
@@ -82,7 +82,7 @@ defmodule RssAssistant.FeedFilterTest do
       """
 
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn item, _ -> 
-        %FeedItemDecision{item_id: item.generated_id, should_include: true, reasoning: "Include all"}
+        {:ok, %FeedItemDecision{item_id: item.generated_id, should_include: true, reasoning: "Include all"}}
       end)
 
       assert {:ok, filtered_xml} = FeedFilter.filter_feed(rss_xml, "include all", filtered_feed_id)
@@ -106,7 +106,7 @@ defmodule RssAssistant.FeedFilterTest do
       """
 
       expect(RssAssistant.Filter.Mock, :should_include?, 1, fn item, _ -> 
-        %FeedItemDecision{item_id: item.generated_id, should_include: false, reasoning: "Exclude all"}
+        {:ok, %FeedItemDecision{item_id: item.generated_id, should_include: false, reasoning: "Exclude all"}}
       end)
 
       assert {:ok, filtered_xml} = FeedFilter.filter_feed(rss_xml, "exclude all", filtered_feed_id)
@@ -138,7 +138,7 @@ defmodule RssAssistant.FeedFilterTest do
       """
 
       expect(RssAssistant.Filter.Mock, :should_include?, 1, fn item, _ -> 
-        %FeedItemDecision{item_id: item.generated_id, should_include: true, reasoning: "Include atom entry"}
+        {:ok, %FeedItemDecision{item_id: item.generated_id, should_include: true, reasoning: "Include atom entry"}}
       end)
 
       assert {:ok, filtered_xml} = FeedFilter.filter_feed(atom_xml, "test", filtered_feed_id)

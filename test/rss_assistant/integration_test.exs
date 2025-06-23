@@ -102,11 +102,12 @@ defmodule RssAssistant.IntegrationTest do
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn
         %FeedItem{title: title} = item, "filter out sports content" ->
           should_include = not (title |> String.downcase() |> String.contains?("sports"))
-          %FeedItemDecision{
+          decision = %FeedItemDecision{
             item_id: item.generated_id, 
             should_include: should_include, 
             reasoning: if(should_include, do: "Not sports", else: "Sports content")
           }
+          {:ok, decision}
       end)
 
       assert {:ok, filtered_xml} =
@@ -128,7 +129,7 @@ defmodule RssAssistant.IntegrationTest do
     test "includes all content when no filtering", %{filtered_feed_id: filtered_feed_id} do
       # Mock filter to include everything
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn item, _ -> 
-        %FeedItemDecision{item_id: item.generated_id, should_include: true, reasoning: "Include all"}
+        {:ok, %FeedItemDecision{item_id: item.generated_id, should_include: true, reasoning: "Include all"}}
       end)
 
       assert {:ok, filtered_xml} =
@@ -143,7 +144,7 @@ defmodule RssAssistant.IntegrationTest do
     test "excludes all content when aggressive filtering", %{filtered_feed_id: filtered_feed_id} do
       # Mock filter to exclude everything
       expect(RssAssistant.Filter.Mock, :should_include?, 3, fn item, _ -> 
-        %FeedItemDecision{item_id: item.generated_id, should_include: false, reasoning: "Exclude all"}
+        {:ok, %FeedItemDecision{item_id: item.generated_id, should_include: false, reasoning: "Exclude all"}}
       end)
 
       assert {:ok, filtered_xml} =
@@ -162,7 +163,7 @@ defmodule RssAssistant.IntegrationTest do
 
     test "preserves RSS metadata and structure", %{filtered_feed_id: filtered_feed_id} do
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn item, _ -> 
-        %FeedItemDecision{item_id: item.generated_id, should_include: true, reasoning: "Preserve structure test"}
+        {:ok, %FeedItemDecision{item_id: item.generated_id, should_include: true, reasoning: "Preserve structure test"}}
       end)
 
       assert {:ok, filtered_xml} = FeedFilter.filter_feed(@nytimes_sample_xml, "test", filtered_feed_id)
