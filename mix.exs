@@ -9,7 +9,8 @@ defmodule RssAssistant.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      releases: releases()
     ]
   end
 
@@ -83,6 +84,16 @@ defmodule RssAssistant.MixProject do
         "tailwind rss_assistant --minify",
         "esbuild rss_assistant --minify",
         "phx.digest"
+      ]
+    ]
+  end
+
+  defp releases do
+    [
+      rss_assistant: [
+        include_erts: true,
+        include_executables_for: [:unix],
+        steps: [:assemble, :tar]
       ]
     ]
   end
