@@ -17,8 +17,8 @@ jobs:
     - name: Set up Elixir
       uses: erlef/setup-beam@v1
       with:
-        elixir-version: '1.15'
-        otp-version: '26'
+        elixir-version: '1.18'
+        otp-version: '27'
 
     - name: Restore dependencies cache
       uses: actions/cache@v4
@@ -37,7 +37,7 @@ jobs:
       run: MIX_ENV=prod mix assets.deploy
 
     - name: Build release with ERTS
-      run: MIX_ENV=prod mix release --include-erts
+      run: MIX_ENV=prod mix release
 
     - name: Create tarball
       run: |
