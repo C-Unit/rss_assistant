@@ -59,7 +59,7 @@ jobs:
           tar -xzf /tmp/rss_assistant-${{ github.sha }}.tar.gz --strip-components=1
           
           # Export environment variables
-          export DATABASE_URL=postgresql://postgres:postgres@localhost/rss_assistant
+          export DATABASE_URL=postgresql://deploy@localhost/rss_assistant
           export SECRET_KEY_BASE=$(openssl rand -base64 32)
           
           # Run migrations
