@@ -10,6 +10,19 @@ jobs:
   build:
     runs-on: ubuntu-24.04-arm
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
     - uses: actions/checkout@v4
 
@@ -31,6 +44,16 @@ jobs:
 
     - name: Compile
       run: mix compile
+
+    - name: Set up database
+      run: mix ecto.setup
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rss_assistant_test
+
+    - name: Run tests
+      run: mix test
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rss_assistant_test
 
     - name: Build assets
       run: MIX_ENV=prod mix assets.deploy
