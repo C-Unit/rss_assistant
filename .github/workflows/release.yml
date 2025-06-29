@@ -49,11 +49,13 @@ jobs:
       run: mix ecto.setup
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rss_assistant_test
+        PGPASSWORD: postgres
 
     - name: Run tests
       run: mix test
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rss_assistant_test
+        PGPASSWORD: postgres
 
     - name: Build assets
       run: MIX_ENV=prod mix assets.deploy
