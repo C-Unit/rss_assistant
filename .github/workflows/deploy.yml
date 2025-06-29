@@ -44,32 +44,5 @@ jobs:
         # Upload tarball
         scp rss_assistant-${{ github.sha }}.tar.gz deploy@129.213.36.237:/tmp/
         
-        # Deploy on server
-        ssh deploy@129.213.36.237 << 'DEPLOY_EOF'
-          set -e
-          
-          # Stop existing service
-          sudo systemctl stop rss-assistant || true
-          
-          # Clean up old deployment
-          rm -rf /opt/rss-assistant/*
-          
-          # Extract new release
-          cd /opt/rss-assistant
-          tar -xzf /tmp/rss_assistant-${{ github.sha }}.tar.gz --strip-components=1
-          
-          # Export environment variables
-          export DATABASE_URL=postgresql://deploy@localhost/rss_assistant
-          export SECRET_KEY_BASE=$(openssl rand -base64 32)
-          
-          # Run migrations
-          ./bin/rss_assistant eval "RssAssistant.Release.migrate"
-          
-          # Start service
-          sudo systemctl daemon-reload
-          sudo systemctl enable rss-assistant
-          sudo systemctl start rss-assistant
-          
-          # Clean up
-          rm /tmp/rss_assistant-${{ github.sha }}.tar.gz
-        DEPLOY_EOF
+        # Run deployment script
+        ssh deploy@129.213.36.237 "/home/deploy/deploy.sh rss_assistant-${{ github.sha }}.tar.gz"
