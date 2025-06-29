@@ -65,7 +65,7 @@ jobs:
           sudo sed -i "s/your-secret-key-base-here/$SECRET_KEY_BASE/" /etc/systemd/system/rss-assistant.service
           
           # Run migrations
-          ./bin/rss_assistant eval "RssAssistant.Release.migrate"
+          DATABASE_URL=postgresql://postgres:postgres@localhost/rss_assistant ./bin/rss_assistant eval "RssAssistant.Release.migrate"
           
           # Start service
           sudo systemctl daemon-reload
