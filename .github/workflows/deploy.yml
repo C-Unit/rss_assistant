@@ -58,14 +58,15 @@ jobs:
           cd /opt/rss-assistant
           tar -xzf /tmp/rss_assistant-${{ github.sha }}.tar.gz --strip-components=1
           
-          # Generate secret key base
-          SECRET_KEY_BASE=$(openssl rand -base64 32)
+          # Export environment variables
+          export DATABASE_URL=postgresql://postgres:postgres@localhost/rss_assistant
+          export SECRET_KEY_BASE=$(openssl rand -base64 32)
           
           # Update systemd service with new secret
           sudo sed -i "s/your-secret-key-base-here/$SECRET_KEY_BASE/" /etc/systemd/system/rss-assistant.service
           
           # Run migrations
-          DATABASE_URL=postgresql://postgres:postgres@localhost/rss_assistant ./bin/rss_assistant eval "RssAssistant.Release.migrate"
+          ./bin/rss_assistant eval "RssAssistant.Release.migrate"
           
           # Start service
           sudo systemctl daemon-reload
