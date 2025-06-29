@@ -1,8 +1,8 @@
 name: Deploy PR
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -73,15 +73,3 @@ jobs:
           # Clean up
           rm /tmp/rss_assistant-${{ github.sha }}.tar.gz
         DEPLOY_EOF
-
-    - name: Comment on PR
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.payload.pull_request.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: `🚀 PR deployed successfully!\n\nAccess your deployment at: https://rss-assistant.codehannah.nyc`
-          });
