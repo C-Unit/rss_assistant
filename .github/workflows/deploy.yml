@@ -1,0 +1,75 @@
+name: Deploy PR
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/release.yml
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Download release artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: rss_assistant-release-${{ github.sha }}
+        path: .
+
+    - name: Deploy to server
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      run: |
+        # Setup SSH
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        
+        # Add trusted host key
+        cat > ~/.ssh/known_hosts << 'EOF'
+        # 129.213.36.237:22 SSH-2.0-OpenSSH_9.6p1 Ubuntu-3ubuntu13.12
+        # 129.213.36.237:22 SSH-2.0-OpenSSH_9.6p1 Ubuntu-3ubuntu13.12
+        |1|XZ40pyUK9Fhq+acgKWxSFi19W8k=|QCrKabbXHTIZVEpED6SEpehh0FU= ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC58nMMx/31i8qgXOq+XBqVcoSreIP4TTumHknHmBcBEy8YSOTKg6IY6kbKTx8UICUG6rZ1zriIDqq+Zq2wo/YEwIMTwMRyFBxSXxGC4kfY5bUwwwaEG72n2FwbCELl9DJ6uT99AOT6y701MT6IrIEdaQLNwl7rWgpxvzsxNeC8ZBJjsy7J+3uOWAEeQEMGcndbvEyoaRfC/HhEWiybaaLm3K7I26fDtkMeZoXvUbTpEvgnawVW3PUnfzCGNIahrgrcDYyrQg9rFo/gFO2eMlhH2hGHFzYTcK2FIT7AxXAPMp7eMqXSDqmwL4iR+N3KTgM6nU+MaTvvYoAk5NYUZ5vHFpOcrbYmQEBYbGg+rbU0KXj9H2f2MSHj0GMVAwR2w7/j7uDdtWfEm0MSa1ncww9s5gCavLrOjsJbsROhXYue44q/bljWFBPatxWuXx8DvrEVpojDUmeXQ6ZJxOI3g70qYRuUAPgMwaIs0zQZW/FWPRyCFgjlcJaB0NAjG7rKxvE=
+        # 129.213.36.237:22 SSH-2.0-OpenSSH_9.6p1 Ubuntu-3ubuntu13.12
+        |1|EqBgn2T3jrUnNrVvjqBP+wGZA1c=|HWxZlHaSocBYarM9c3jlYacCt0k= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBFQXj909srgFIacTO3XC/RzV9GPJo43h9pXQrmHWlCzv/26toLI1JAl18kbOFvs+d2DjrDAe8tJjzoZa+ToDtws=
+        # 129.213.36.237:22 SSH-2.0-OpenSSH_9.6p1 Ubuntu-3ubuntu13.12
+        |1|D6QO/RaoikLetT18pmmDENSIKU0=|f3f/3r4QB7uXTFqnKdTEWSVEKV0= ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN8YsTN4AoEzrkiCqORO6YqFsN+MPUwCSrnXLY7wRklB
+        # 129.213.36.237:22 SSH-2.0-OpenSSH_9.6p1 Ubuntu-3ubuntu13.12
+        EOF
+        
+        # Upload tarball
+        scp rss_assistant-${{ github.sha }}.tar.gz deploy@129.213.36.237:/tmp/
+        
+        # Deploy on server
+        ssh deploy@129.213.36.237 << 'DEPLOY_EOF'
+          set -e
+          
+          # Stop existing service
+          sudo systemctl stop rss-assistant || true
+          
+          # Clean up old deployment
+          rm -rf /opt/rss-assistant/*
+          
+          # Extract new release
+          cd /opt/rss-assistant
+          tar -xzf /tmp/rss_assistant-${{ github.sha }}.tar.gz --strip-components=1
+          
+          # Export environment variables
+          export DATABASE_URL=postgresql://deploy@localhost/rss_assistant
+          export SECRET_KEY_BASE=$(openssl rand -base64 32)
+          
+          # Run migrations
+          ./bin/rss_assistant eval "RssAssistant.Release.migrate"
+          
+          # Start service
+          sudo systemctl daemon-reload
+          sudo systemctl enable rss-assistant
+          sudo systemctl start rss-assistant
+          
+          # Clean up
+          rm /tmp/rss_assistant-${{ github.sha }}.tar.gz
+        DEPLOY_EOF

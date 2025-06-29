@@ -1,0 +1,51 @@
+name: Build Release
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Elixir
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: '1.18'
+        otp-version: '27'
+
+    - name: Restore dependencies cache
+      uses: actions/cache@v4
+      with:
+        path: deps
+        key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+        restore-keys: ${{ runner.os }}-mix-
+
+    - name: Install dependencies
+      run: mix deps.get
+
+    - name: Compile
+      run: mix compile
+
+    - name: Build assets
+      run: MIX_ENV=prod mix assets.deploy
+
+    - name: Build release with ERTS
+      run: MIX_ENV=prod mix release
+
+    - name: Create tarball
+      run: |
+        cd _build/prod/rel
+        tar -czf ../../../rss_assistant-${{ github.sha }}.tar.gz rss_assistant
+
+    - name: Upload release artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: rss_assistant-release-${{ github.sha }}
+        path: rss_assistant-${{ github.sha }}.tar.gz
+        retention-days: 30
