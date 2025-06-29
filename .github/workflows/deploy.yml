@@ -62,9 +62,6 @@ jobs:
           export DATABASE_URL=postgresql://postgres:postgres@localhost/rss_assistant
           export SECRET_KEY_BASE=$(openssl rand -base64 32)
           
-          # Update systemd service with new secret
-          sudo sed -i "s/your-secret-key-base-here/$SECRET_KEY_BASE/" /etc/systemd/system/rss-assistant.service
-          
           # Run migrations
           ./bin/rss_assistant eval "RssAssistant.Release.migrate"
           
