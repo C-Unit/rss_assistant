@@ -68,6 +68,8 @@ defmodule RssAssistant.FeedFilter do
         # No cached decision, call filter implementation
         case filter_impl.should_include?(item, prompt) do
           {:ok, decision} ->
+            # Add title and description to the decision before storing
+            decision = %{decision | title: item.title, description: item.description}
             # Successful decision, store it and return
             store_decision(decision, filtered_feed_id)
             decision
@@ -96,6 +98,8 @@ defmodule RssAssistant.FeedFilter do
           item_id: decision_schema.item_id,
           should_include: decision_schema.should_include,
           reasoning: decision_schema.reasoning,
+          title: decision_schema.title,
+          description: decision_schema.description,
           timestamp: decision_schema.inserted_at
         }
     end
@@ -107,6 +111,8 @@ defmodule RssAssistant.FeedFilter do
       item_id: decision.item_id,
       should_include: decision.should_include,
       reasoning: decision.reasoning,
+      title: decision.title,
+      description: decision.description,
       filtered_feed_id: filtered_feed_id
     })
 

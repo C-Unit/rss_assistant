@@ -4,6 +4,8 @@ defmodule RssAssistantWeb.FilteredFeedController do
   alias RssAssistant.FilteredFeed
   alias RssAssistant.Repo
   alias RssAssistant.FeedFilter
+  alias RssAssistant.FeedItemDecisionSchema
+  import Ecto.Query
 
   def new(conn, _params) do
     changeset = FilteredFeed.changeset(%FilteredFeed{}, %{})
@@ -27,7 +29,8 @@ defmodule RssAssistantWeb.FilteredFeedController do
   def show(conn, %{"slug" => slug}) do
     filtered_feed = Repo.get_by!(FilteredFeed, slug: slug)
     changeset = FilteredFeed.changeset(filtered_feed, %{})
-    render(conn, :show, filtered_feed: filtered_feed, changeset: changeset)
+    filtered_items = get_filtered_items(filtered_feed.id)
+    render(conn, :show, filtered_feed: filtered_feed, changeset: changeset, filtered_items: filtered_items)
   end
 
   def update(conn, %{"slug" => slug, "filtered_feed" => filtered_feed_params}) do
@@ -98,5 +101,15 @@ defmodule RssAssistantWeb.FilteredFeedController do
       content_type when is_binary(content_type) -> content_type
       _ -> "application/rss+xml"
     end
+  end
+
+  defp get_filtered_items(filtered_feed_id) do
+    query = from d in FeedItemDecisionSchema,
+      where: d.filtered_feed_id == ^filtered_feed_id and d.should_include == false,
+      order_by: [desc: d.inserted_at],
+      limit: 20,
+      select: d
+
+    Repo.all(query)
   end
 end

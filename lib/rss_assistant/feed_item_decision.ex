@@ -10,6 +10,8 @@ defmodule RssAssistant.FeedItemDecision do
           item_id: String.t() | nil,
           should_include: boolean(),
           reasoning: String.t() | nil,
+          title: String.t() | nil,
+          description: String.t() | nil,
           timestamp: DateTime.t() | nil
         }
 
@@ -17,17 +19,21 @@ defmodule RssAssistant.FeedItemDecision do
     :item_id,
     :should_include,
     :reasoning,
+    :title,
+    :description,
     :timestamp
   ]
 
   @doc """
   Creates a new FeedItemDecision struct.
   """
-  def new(item_id, should_include, reasoning \\ nil) do
+  def new(item_id, should_include, reasoning \\ nil, title \\ nil, description \\ nil) do
     %__MODULE__{
       item_id: item_id,
       should_include: should_include,
       reasoning: reasoning,
+      title: title,
+      description: description,
       timestamp: DateTime.utc_now()
     }
   end
@@ -45,6 +51,8 @@ defmodule RssAssistant.FeedItemDecisionSchema do
     field :item_id, :string
     field :should_include, :boolean
     field :reasoning, :string
+    field :title, :string
+    field :description, :string
     field :filtered_feed_id, :id
 
     timestamps(type: :utc_datetime)
@@ -53,7 +61,7 @@ defmodule RssAssistant.FeedItemDecisionSchema do
   @doc false
   def changeset(feed_item_decision, attrs) do
     feed_item_decision
-    |> cast(attrs, [:item_id, :should_include, :reasoning, :filtered_feed_id])
+    |> cast(attrs, [:item_id, :should_include, :reasoning, :title, :description, :filtered_feed_id])
     |> validate_required([:item_id, :should_include, :filtered_feed_id])
     |> unique_constraint([:item_id, :filtered_feed_id])
   end
