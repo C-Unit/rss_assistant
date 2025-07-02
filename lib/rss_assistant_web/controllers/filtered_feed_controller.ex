@@ -44,7 +44,8 @@ defmodule RssAssistantWeb.FilteredFeedController do
         |> redirect(to: ~p"/filtered_feeds/#{filtered_feed.slug}")
 
       {:error, changeset} ->
-        render(conn, :show, filtered_feed: filtered_feed, changeset: changeset)
+        filtered_items = get_filtered_items(filtered_feed.id)
+        render(conn, :show, filtered_feed: filtered_feed, changeset: changeset, filtered_items: filtered_items)
     end
   end
 
