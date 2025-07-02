@@ -62,6 +62,7 @@ defmodule RssAssistant.MixProject do
       {:req, "~> 0.5.0"},
       {:sweet_xml, "~> 0.7.0"},
       {:gemini_ex, "~> 0.0.2"},
+      {:html_sanitize_ex, "~> 1.4"},
       {:mox, "~> 1.0", only: :test}
     ]
   end

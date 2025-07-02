@@ -51,6 +51,41 @@
       </:actions>
     </.simple_form>
   </div>
+
+  <div>
+    <h3 class="text-lg font-semibold mb-4">Recently Filtered Items</h3>
+    <%= if Enum.empty?(@filtered_items) do %>
+      <p class="text-gray-600 italic">No items have been filtered out yet. The filter will start working when RSS feed items are processed.</p>
+    <% else %>
+      <div class="space-y-4">
+        <%= for item <- @filtered_items do %>
+          <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div class="mb-2">
+              <%= if item.title do %>
+                <h4 class="font-medium text-gray-900 mb-1"><%= item.title %></h4>
+              <% end %>
+              <%= if item.description do %>
+                <% clean_description = HtmlSanitizeEx.strip_tags(item.description) %>
+                <p class="text-sm text-gray-700 mb-2">
+                  <%= String.slice(clean_description, 0, 200) %><%= if String.length(clean_description) > 200, do: "..." %>
+                </p>
+              <% end %>
+            </div>
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <p class="text-sm text-gray-600">
+                  <strong>Filtered because:</strong> <%= item.reasoning || "No reason provided" %>
+                </p>
+              </div>
+              <div class="text-xs text-gray-500 ml-4">
+                <%= Calendar.strftime(item.inserted_at, "%b %d, %Y at %I:%M %p") %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
 </div>
 
 <.back navigate={~p"/filtered_feeds/new"}>Create another filtered feed</.back>
