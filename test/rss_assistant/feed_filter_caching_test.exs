@@ -2,6 +2,7 @@ defmodule RssAssistant.FeedFilterCachingTest do
   use RssAssistant.DataCase
   
   import Mox
+  import RssAssistant.AccountsFixtures
   
   alias RssAssistant.{FeedFilter, FeedItem, FeedItemDecision, FeedItemDecisionSchema, FilteredFeed, Repo}
 
@@ -15,12 +16,17 @@ defmodule RssAssistant.FeedFilterCachingTest do
     original_filter = Application.get_env(:rss_assistant, :filter_impl)
     Application.put_env(:rss_assistant, :filter_impl, MockFilter)
     
+    # Ensure plans exist and create user
+    free_plan_fixture()
+    user = user_fixture()
+    
     # Create a filtered feed for testing
     {:ok, filtered_feed} = 
       %FilteredFeed{}
       |> FilteredFeed.changeset(%{
         url: "https://example.com/feed.xml",
-        prompt: "filter test content"
+        prompt: "filter test content",
+        user_id: user.id
       })
       |> Repo.insert()
 
@@ -171,12 +177,16 @@ defmodule RssAssistant.FeedFilterCachingTest do
     end
 
     test "decisions are cached separately per filtered_feed_id", %{rss_content: rss_content, prompt: prompt} do
+      # Create user for feeds
+      user = user_fixture()
+      
       # Create two different filtered feeds
       {:ok, feed1} = 
         %FilteredFeed{}
         |> FilteredFeed.changeset(%{
           url: "https://example.com/feed1.xml",
-          prompt: "filter prompt 1"
+          prompt: "filter prompt 1",
+          user_id: user.id
         })
         |> Repo.insert()
 
@@ -184,7 +194,8 @@ defmodule RssAssistant.FeedFilterCachingTest do
         %FilteredFeed{}
         |> FilteredFeed.changeset(%{
           url: "https://example.com/feed2.xml", 
-          prompt: "filter prompt 2"
+          prompt: "filter prompt 2",
+          user_id: user.id
         })
         |> Repo.insert()
 

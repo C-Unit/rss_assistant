@@ -3,6 +3,7 @@ defmodule RssAssistant.FeedFilterTest do
 
   import Mox
   import ExUnit.CaptureLog
+  import RssAssistant.AccountsFixtures
 
   alias RssAssistant.{FeedFilter, FeedItem, FeedItemDecision, FilteredFeed, Repo}
 
@@ -10,12 +11,17 @@ defmodule RssAssistant.FeedFilterTest do
   setup :verify_on_exit!
 
   setup do
+    # Ensure plans exist and create user
+    free_plan_fixture()
+    user = user_fixture()
+    
     # Create a test filtered feed
     {:ok, filtered_feed} = 
       %FilteredFeed{}
       |> FilteredFeed.changeset(%{
         url: "https://example.com/test.xml",
-        prompt: "test filtering"
+        prompt: "test filtering",
+        user_id: user.id
       })
       |> Repo.insert()
 

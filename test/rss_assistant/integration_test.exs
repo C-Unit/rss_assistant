@@ -2,6 +2,7 @@ defmodule RssAssistant.IntegrationTest do
   use RssAssistant.DataCase
 
   import Mox
+  import RssAssistant.AccountsFixtures
 
   alias RssAssistant.{FeedParser, FeedFilter, FeedItem, FeedItemDecision, FilteredFeed, Repo}
 
@@ -9,12 +10,17 @@ defmodule RssAssistant.IntegrationTest do
   setup :verify_on_exit!
 
   setup do
+    # Ensure plans exist and create user
+    free_plan_fixture()
+    user = user_fixture()
+    
     # Create a test filtered feed
     {:ok, filtered_feed} =
       %FilteredFeed{}
       |> FilteredFeed.changeset(%{
         url: "https://example.com/nytimes.xml",
-        prompt: "integration test filtering"
+        prompt: "integration test filtering",
+        user_id: user.id
       })
       |> Repo.insert()
 

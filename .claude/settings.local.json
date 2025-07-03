@@ -9,7 +9,8 @@
       "WebFetch(domain:hexdocs.pm)",
       "Bash(mix hex.info:*)",
       "Bash(mix ecto.gen.migration:*)",
-      "Bash(mix ecto.migrate:*)"
+      "Bash(mix ecto.migrate:*)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }
