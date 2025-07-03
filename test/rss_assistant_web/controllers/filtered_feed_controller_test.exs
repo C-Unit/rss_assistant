@@ -274,4 +274,86 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "reached your plan limit"
     end
   end
+
+  describe "filtered items display" do
+    test "shows excluded items but not included items", %{conn: conn} do
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: user.id})
+
+      # Create excluded item
+      {:ok, _excluded} = %RssAssistant.FeedItemDecisionSchema{}
+      |> RssAssistant.FeedItemDecisionSchema.changeset(%{
+        item_id: "excluded",
+        should_include: false,
+        reasoning: "Contains sports content",
+        title: "Sports News",
+        description: "Latest sports updates",
+        filtered_feed_id: feed.id
+      })
+      |> Repo.insert()
+
+      # Create included item
+      {:ok, _included} = %RssAssistant.FeedItemDecisionSchema{}
+      |> RssAssistant.FeedItemDecisionSchema.changeset(%{
+        item_id: "included",
+        should_include: true,
+        reasoning: "Allowed through",
+        title: "Tech News",
+        description: "Technology updates",
+        filtered_feed_id: feed.id
+      })
+      |> Repo.insert()
+
+      conn = 
+        conn
+        |> log_in_user(user)
+        |> get(~p"/filtered_feeds/#{feed.slug}")
+
+      response = html_response(conn, 200)
+      assert response =~ "Sports News"
+      assert response =~ "Contains sports content"
+      refute response =~ "Tech News"
+    end
+
+    test "limits filtered items to 20", %{conn: conn} do
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: user.id})
+
+      # Create 25 filtered items
+      for i <- 1..25 do
+        {:ok, _item} = %RssAssistant.FeedItemDecisionSchema{}
+        |> RssAssistant.FeedItemDecisionSchema.changeset(%{
+          item_id: "item#{i}",
+          should_include: false,
+          reasoning: "Test reason #{i}",
+          title: "Title #{i}",
+          description: "Description #{i}",
+          filtered_feed_id: feed.id
+        })
+        |> Repo.insert()
+      end
+
+      conn = 
+        conn
+        |> log_in_user(user)
+        |> get(~p"/filtered_feeds/#{feed.slug}")
+
+      # Check that exactly 20 items are displayed
+      filtered_items = conn.assigns.filtered_items
+      assert length(filtered_items) == 20
+    end
+
+    test "shows message when no filtered items exist", %{conn: conn} do
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: user.id})
+
+      conn = 
+        conn
+        |> log_in_user(user)
+        |> get(~p"/filtered_feeds/#{feed.slug}")
+
+      response = html_response(conn, 200)
+      assert response =~ "No items have been filtered out yet"
+    end
+  end
 end
