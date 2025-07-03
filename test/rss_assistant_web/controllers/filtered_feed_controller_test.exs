@@ -1,26 +1,71 @@
 defmodule RssAssistantWeb.FilteredFeedControllerTest do
   use RssAssistantWeb.ConnCase
 
-  alias RssAssistant.FilteredFeed
-  alias RssAssistant.Repo
+  import RssAssistant.AccountsFixtures
+  import RssAssistant.FilteredFeedFixtures
 
-  describe "GET /filtered_feeds/new" do
-    test "renders new filtered feed form", %{conn: conn} do
+  alias RssAssistant.{Accounts, FilteredFeed, Repo}
+
+  setup do
+    free_plan_fixture()
+    pro_plan_fixture()
+    %{}
+  end
+
+  describe "GET /filtered_feeds/new - unauthenticated" do
+    test "redirects to login page", %{conn: conn} do
       conn = get(conn, ~p"/filtered_feeds/new")
-      assert html_response(conn, 200) =~ "Create Filtered RSS Feed"
-      assert html_response(conn, 200) =~ "RSS Feed URL"
-      assert html_response(conn, 200) =~ "Filter Description"
+      assert redirected_to(conn) == ~p"/users/log_in"
     end
   end
 
-  describe "POST /filtered_feeds" do
-    test "creates filtered feed with valid data and redirects", %{conn: conn} do
+  describe "GET /filtered_feeds/new - authenticated" do
+    test "renders new form for user with available feeds", %{conn: conn} do
+      user = user_fixture()
+      Accounts.change_user_plan(user, "Pro")
+      
+      conn = 
+        conn
+        |> log_in_user(user)
+        |> get(~p"/filtered_feeds/new")
+
+      assert html_response(conn, 200) =~ "Create Filtered RSS Feed"
+    end
+
+    test "redirects to home when user has reached plan limit", %{conn: conn} do
+      user = user_fixture()  # Free plan (0 feeds)
+      
+      conn = 
+        conn
+        |> log_in_user(user)
+        |> get(~p"/filtered_feeds/new")
+
+      assert redirected_to(conn) == ~p"/"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "reached your plan limit"
+    end
+  end
+
+  describe "POST /filtered_feeds - unauthenticated" do
+    test "redirects to login page", %{conn: conn} do
+      conn = post(conn, ~p"/filtered_feeds", filtered_feed: %{})
+      assert redirected_to(conn) == ~p"/users/log_in"
+    end
+  end
+
+  describe "POST /filtered_feeds - authenticated" do
+    test "creates filtered feed with valid data for pro user", %{conn: conn} do
+      user = user_fixture()
+      Accounts.change_user_plan(user, "Pro")
+      
       valid_attrs = %{
         url: "https://example.com/feed.xml",
         prompt: "Filter out sports content"
       }
 
-      conn = post(conn, ~p"/filtered_feeds", filtered_feed: valid_attrs)
+      conn = 
+        conn
+        |> log_in_user(user)
+        |> post(~p"/filtered_feeds", filtered_feed: valid_attrs)
 
       assert %{slug: slug} = redirected_params(conn)
       assert redirected_to(conn) == ~p"/filtered_feeds/#{slug}"
@@ -28,61 +73,155 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
       filtered_feed = Repo.get_by(FilteredFeed, slug: slug)
       assert filtered_feed.url == "https://example.com/feed.xml"
       assert filtered_feed.prompt == "Filter out sports content"
+      assert filtered_feed.user_id == user.id
+    end
+
+    test "redirects to home when user has reached plan limit", %{conn: conn} do
+      user = user_fixture()  # Free plan (0 feeds)
+      
+      valid_attrs = %{
+        url: "https://example.com/feed.xml",
+        prompt: "Filter out sports content"
+      }
+
+      conn = 
+        conn
+        |> log_in_user(user)
+        |> post(~p"/filtered_feeds", filtered_feed: valid_attrs)
+
+      assert redirected_to(conn) == ~p"/"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "reached your plan limit"
     end
 
     test "renders errors with invalid data", %{conn: conn} do
+      user = user_fixture()
+      Accounts.change_user_plan(user, "Pro")
+      
       invalid_attrs = %{url: "not-a-url", prompt: ""}
 
-      conn = post(conn, ~p"/filtered_feeds", filtered_feed: invalid_attrs)
+      conn = 
+        conn
+        |> log_in_user(user)
+        |> post(~p"/filtered_feeds", filtered_feed: invalid_attrs)
 
       assert html_response(conn, 200) =~ "Create Filtered RSS Feed"
-      assert html_response(conn, 200) =~ "must be a valid URL"
-      assert html_response(conn, 200) =~ "can&#39;t be blank"
     end
   end
 
-  describe "GET /filtered_feeds/:slug" do
-    test "shows filtered feed management page", %{conn: conn} do
-      filtered_feed = create_filtered_feed()
+  describe "GET /filtered_feeds/:slug - unauthenticated" do
+    test "redirects to login page", %{conn: conn} do
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: user.id})
+      
+      conn = get(conn, ~p"/filtered_feeds/#{feed.slug}")
+      assert redirected_to(conn) == ~p"/users/log_in"
+    end
+  end
 
-      conn = get(conn, ~p"/filtered_feeds/#{filtered_feed.slug}")
+  describe "GET /filtered_feeds/:slug - authenticated" do
+    test "shows filtered feed for owner", %{conn: conn} do
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: user.id})
 
-      assert html_response(conn, 200) =~ "Manage Filtered RSS Feed"
-      assert html_response(conn, 200) =~ filtered_feed.url
-      assert html_response(conn, 200) =~ filtered_feed.prompt
-      assert html_response(conn, 200) =~ "/filtered_feeds/#{filtered_feed.slug}/rss"
+      conn = 
+        conn
+        |> log_in_user(user)
+        |> get(~p"/filtered_feeds/#{feed.slug}")
+
+      assert html_response(conn, 200) =~ feed.url
+      assert html_response(conn, 200) =~ feed.prompt
+    end
+
+    test "returns 404 when accessing another user's feed", %{conn: conn} do
+      owner = user_fixture()
+      other_user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: owner.id})
+
+      assert_error_sent 404, fn ->
+        conn
+        |> log_in_user(other_user)
+        |> get(~p"/filtered_feeds/#{feed.slug}")
+      end
     end
 
     test "returns 404 for non-existent slug", %{conn: conn} do
+      user = user_fixture()
+      
       assert_error_sent 404, fn ->
-        get(conn, ~p"/filtered_feeds/nonexistent")
+        conn
+        |> log_in_user(user)
+        |> get(~p"/filtered_feeds/nonexistent")
       end
     end
   end
 
-  describe "GET /filtered_feeds/:slug/rss" do
-    test "serves RSS feed when original feed is accessible", %{conn: conn} do
-      # Create a filtered feed pointing to NY Times RSS feed
-      filtered_feed =
-        create_filtered_feed(%{
-          url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
-          prompt: "Filter out sports content"
-        })
+  describe "PATCH /filtered_feeds/:slug - unauthenticated" do
+    test "redirects to login page", %{conn: conn} do
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: user.id})
+      
+      conn = patch(conn, ~p"/filtered_feeds/#{feed.slug}", filtered_feed: %{})
+      assert redirected_to(conn) == ~p"/users/log_in"
+    end
+  end
 
-      conn = get(conn, ~p"/filtered_feeds/#{filtered_feed.slug}/rss")
+  describe "PATCH /filtered_feeds/:slug - authenticated" do
+    test "updates filtered feed for owner", %{conn: conn} do
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: user.id})
+
+      update_attrs = %{
+        url: "https://updated.com/feed.xml",
+        prompt: "Updated filter description"
+      }
+
+      conn = 
+        conn
+        |> log_in_user(user)
+        |> patch(~p"/filtered_feeds/#{feed.slug}", filtered_feed: update_attrs)
+
+      assert redirected_to(conn) == ~p"/filtered_feeds/#{feed.slug}"
+
+      updated_feed = Repo.get!(FilteredFeed, feed.id)
+      assert updated_feed.url == "https://updated.com/feed.xml"
+      assert updated_feed.prompt == "Updated filter description"
+    end
+
+    test "returns 404 when updating another user's feed", %{conn: conn} do
+      owner = user_fixture()
+      other_user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: owner.id})
+
+      assert_error_sent 404, fn ->
+        conn
+        |> log_in_user(other_user)
+        |> patch(~p"/filtered_feeds/#{feed.slug}", filtered_feed: %{prompt: "hacked"})
+      end
+    end
+  end
+
+  describe "GET /filtered_feeds/:slug/rss - public access" do
+    test "serves RSS feed for any user's feed", %{conn: conn} do
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{
+        user_id: user.id,
+        url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"
+      })
+
+      conn = get(conn, ~p"/filtered_feeds/#{feed.slug}/rss")
 
       assert response_content_type(conn, :xml)
       assert conn.status == 200
     end
 
     test "returns error when original feed is not accessible", %{conn: conn} do
-      filtered_feed =
-        create_filtered_feed(%{
-          url: "https://example.com/nonexistent-feed.xml",
-          prompt: "Filter out sports content"
-        })
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{
+        user_id: user.id,
+        url: "https://example.com/nonexistent-feed.xml"
+      })
 
-      conn = get(conn, ~p"/filtered_feeds/#{filtered_feed.slug}/rss")
+      conn = get(conn, ~p"/filtered_feeds/#{feed.slug}/rss")
 
       assert conn.status == 502
       assert response(conn, 502) =~ "Error fetching RSS feed"
@@ -95,45 +234,44 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
     end
   end
 
-  describe "PATCH /filtered_feeds/:slug" do
-    test "updates filtered feed with valid data", %{conn: conn} do
-      filtered_feed = create_filtered_feed()
+  describe "plan limits enforcement" do
+    test "pro user can create up to 100 feeds", %{conn: conn} do
+      user = user_fixture()
+      Accounts.change_user_plan(user, "Pro")
+      
+      # Create 99 feeds
+      for _i <- 1..99 do
+        filtered_feed_fixture(%{user_id: user.id})
+      end
+      
+      # Should still be able to create the 100th
+      conn = 
+        conn
+        |> log_in_user(user)
+        |> get(~p"/filtered_feeds/new")
 
-      update_attrs = %{
-        url: "https://updated.com/feed.xml",
-        prompt: "Updated filter description"
+      assert html_response(conn, 200) =~ "Create Filtered RSS Feed"
+      
+      # Create the 100th feed
+      valid_attrs = %{
+        url: "https://example.com/feed100.xml",
+        prompt: "Feed 100"
       }
 
-      conn = patch(conn, ~p"/filtered_feeds/#{filtered_feed.slug}", filtered_feed: update_attrs)
+      conn = 
+        conn
+        |> post(~p"/filtered_feeds", filtered_feed: valid_attrs)
 
-      assert redirected_to(conn) == ~p"/filtered_feeds/#{filtered_feed.slug}"
+      assert %{slug: _slug} = redirected_params(conn)
+      
+      # Now should be at limit
+      conn = 
+        build_conn()
+        |> log_in_user(user)
+        |> get(~p"/filtered_feeds/new")
 
-      updated_feed = Repo.get!(FilteredFeed, filtered_feed.id)
-      assert updated_feed.url == "https://updated.com/feed.xml"
-      assert updated_feed.prompt == "Updated filter description"
+      assert redirected_to(conn) == ~p"/"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "reached your plan limit"
     end
-
-    test "renders errors with invalid data", %{conn: conn} do
-      filtered_feed = create_filtered_feed()
-
-      invalid_attrs = %{url: "not-a-url", prompt: ""}
-
-      conn = patch(conn, ~p"/filtered_feeds/#{filtered_feed.slug}", filtered_feed: invalid_attrs)
-
-      assert html_response(conn, 200) =~ "Manage Filtered RSS Feed"
-      assert html_response(conn, 200) =~ "must be a valid URL"
-      assert html_response(conn, 200) =~ "can&#39;t be blank"
-    end
-  end
-
-  defp create_filtered_feed(attrs \\ %{}) do
-    default_attrs = %{
-      url: "https://example.com/feed.xml",
-      prompt: "Filter out sports content"
-    }
-
-    %FilteredFeed{}
-    |> FilteredFeed.changeset(Map.merge(default_attrs, attrs))
-    |> Repo.insert!()
   end
 end

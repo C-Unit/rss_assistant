@@ -5,36 +5,67 @@ defmodule RssAssistantWeb.FilteredFeedController do
   alias RssAssistant.Repo
   alias RssAssistant.FeedFilter
   alias RssAssistant.FeedItemDecisionSchema
+  alias RssAssistant.Accounts
   import Ecto.Query
 
+  # TODO: reduce duplication between new and create
   def new(conn, _params) do
-    changeset = FilteredFeed.changeset(%FilteredFeed{}, %{})
-    render(conn, :new, changeset: changeset)
+    user = conn.assigns.current_user
+
+    if Accounts.can_create_feed?(user) do
+      changeset = FilteredFeed.changeset(%FilteredFeed{}, %{})
+      render(conn, :new, changeset: changeset)
+    else
+      plan = Accounts.get_user_plan(user)
+      current_count = Accounts.get_user_feed_count(user)
+
+      conn
+      |> put_flash(:error, "You have reached your plan limit of #{plan.max_feeds} filtered feeds. You currently have #{current_count} feeds.")
+      |> redirect(to: ~p"/")
+    end
   end
 
   def create(conn, %{"filtered_feed" => filtered_feed_params}) do
-    changeset = FilteredFeed.changeset(%FilteredFeed{}, filtered_feed_params)
+    user = conn.assigns.current_user
 
-    case Repo.insert(changeset) do
-      {:ok, filtered_feed} ->
-        conn
-        |> put_flash(:info, "Filtered feed created successfully!")
-        |> redirect(to: ~p"/filtered_feeds/#{filtered_feed.slug}")
+    if Accounts.can_create_feed?(user) do
+      filtered_feed_params = Map.put(filtered_feed_params, "user_id", user.id)
+      changeset = FilteredFeed.changeset(%FilteredFeed{}, filtered_feed_params)
 
-      {:error, changeset} ->
-        render(conn, :new, changeset: changeset)
+      case Repo.insert(changeset) do
+        {:ok, filtered_feed} ->
+          conn
+          |> put_flash(:info, "Filtered feed created successfully!")
+          |> redirect(to: ~p"/filtered_feeds/#{filtered_feed.slug}")
+
+        {:error, changeset} ->
+          render(conn, :new, changeset: changeset)
+      end
+    else
+      plan = Accounts.get_user_plan(user)
+      current_count = Accounts.get_user_feed_count(user)
+
+      conn
+      |> put_flash(:error, "You have reached your plan limit of #{plan.max_feeds} filtered feeds. You currently have #{current_count} feeds.")
+      |> redirect(to: ~p"/")
     end
   end
 
   def show(conn, %{"slug" => slug}) do
-    filtered_feed = Repo.get_by!(FilteredFeed, slug: slug)
+    user = conn.assigns.current_user
+    # TODO: Create a separate function outside of the controller that uses a query to control
+    # filtering to a user's feeds, then we find the slug inside of that. Add it to Accounts
+    # where we already have a similar query we can use
+    filtered_feed = Repo.get_by!(FilteredFeed, slug: slug, user_id: user.id)
     changeset = FilteredFeed.changeset(filtered_feed, %{})
     filtered_items = get_filtered_items(filtered_feed.id)
     render(conn, :show, filtered_feed: filtered_feed, changeset: changeset, filtered_items: filtered_items)
   end
 
   def update(conn, %{"slug" => slug, "filtered_feed" => filtered_feed_params}) do
-    filtered_feed = Repo.get_by!(FilteredFeed, slug: slug)
+    user = conn.assigns.current_user
+    # TODO: Ditto above
+    filtered_feed = Repo.get_by!(FilteredFeed, slug: slug, user_id: user.id)
     changeset = FilteredFeed.changeset(filtered_feed, filtered_feed_params)
 
     case Repo.update(changeset) do
