@@ -6,6 +6,8 @@ defmodule RssAssistant.FilteredFeed do
     field :url, :string
     field :prompt, :string
     field :slug, :string
+    
+    belongs_to :user, RssAssistant.Accounts.User
 
     timestamps(type: :utc_datetime)
   end
@@ -13,8 +15,8 @@ defmodule RssAssistant.FilteredFeed do
   @doc false
   def changeset(filtered_feed, attrs) do
     filtered_feed
-    |> cast(attrs, [:url, :prompt, :slug])
-    |> validate_required([:url, :prompt])
+    |> cast(attrs, [:url, :prompt, :slug, :user_id])
+    |> validate_required([:url, :prompt, :user_id])
     |> validate_format(:url, ~r/^https?:\/\//, message: "must be a valid URL")
     |> put_slug()
     |> unique_constraint(:slug)
