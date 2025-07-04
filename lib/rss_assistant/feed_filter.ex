@@ -8,7 +8,7 @@ defmodule RssAssistant.FeedFilter do
 
   import SweetXml
   import Ecto.Query
-  alias RssAssistant.{FeedParser, FeedItem, FeedItemDecision, FeedItemDecisionSchema, Repo}
+  alias RssAssistant.{FeedParser, FeedItem, FeedItemDecision, Repo}
 
   @doc """
   Filters an RSS feed based on a user prompt.
@@ -46,7 +46,7 @@ defmodule RssAssistant.FeedFilter do
       try do
         case get_or_create_decision(item, prompt, filtered_feed_id, filter_impl) do
           %FeedItemDecision{should_include: should_include} -> should_include
-          _ -> true  # Default to include if decision struct is invalid
+          _ -> true  # Default to include if decision cant be determined
         end
       rescue
         # Include item if filtering fails
@@ -65,61 +65,31 @@ defmodule RssAssistant.FeedFilter do
   defp get_or_create_decision(%FeedItem{generated_id: item_id} = item, prompt, filtered_feed_id, filter_impl) do
     case get_cached_decision(item_id, filtered_feed_id) do
       nil ->
-        # No cached decision, call filter implementation
-        case filter_impl.should_include?(item, prompt) do
-          {:ok, decision} ->
-            # Add title and description to the decision before storing
-            decision = %{decision | title: item.title, description: item.description}
-            # Successful decision, store it and return
-            store_decision(decision, filtered_feed_id)
-            decision
-          
-          {:error, fallback_decision} ->
-            # Fallback decision due to API failure, don't store, just return
-            fallback_decision
+        with {:ok, {should_include, reasoning}} <- filter_impl.should_include?(item, prompt),
+             changeset <- FeedItemDecision.changeset(%FeedItemDecision{}, %{
+               item_id: item.generated_id,
+               should_include: should_include,
+               reasoning: reasoning,
+               title: item.title,
+               description: item.description,
+               filtered_feed_id: filtered_feed_id
+             }),
+             {:ok, decision} <- Repo.insert(changeset) do
+          decision
         end
 
       cached_decision ->
-        # Return cached decision
         cached_decision
     end
   end
 
   # Retrieve cached decision from database
   defp get_cached_decision(item_id, filtered_feed_id) do
-    query = from d in FeedItemDecisionSchema,
+    query = from d in FeedItemDecision,
       where: d.item_id == ^item_id and d.filtered_feed_id == ^filtered_feed_id,
       select: d
 
-    case Repo.one(query) do
-      nil -> nil
-      decision_schema ->
-        %FeedItemDecision{
-          item_id: decision_schema.item_id,
-          should_include: decision_schema.should_include,
-          reasoning: decision_schema.reasoning,
-          title: decision_schema.title,
-          description: decision_schema.description,
-          timestamp: decision_schema.inserted_at
-        }
-    end
-  end
-
-  # Store decision in database
-  defp store_decision(%FeedItemDecision{} = decision, filtered_feed_id) do
-    changeset = FeedItemDecisionSchema.changeset(%FeedItemDecisionSchema{}, %{
-      item_id: decision.item_id,
-      should_include: decision.should_include,
-      reasoning: decision.reasoning,
-      title: decision.title,
-      description: decision.description,
-      filtered_feed_id: filtered_feed_id
-    })
-
-    case Repo.insert(changeset) do
-      {:ok, _} -> :ok
-      {:error, _} -> :error  # Ignore storage errors, don't fail the filtering
-    end
+    Repo.one(query)
   end
 
   # Rebuild the RSS/Atom feed with only the filtered items

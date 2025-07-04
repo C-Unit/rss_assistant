@@ -5,7 +5,7 @@ defmodule RssAssistant.FeedFilterTest do
   import ExUnit.CaptureLog
   import RssAssistant.AccountsFixtures
 
-  alias RssAssistant.{FeedFilter, FeedItem, FeedItemDecision, FilteredFeed, Repo}
+  alias RssAssistant.{FeedFilter, FeedItem, FilteredFeed, Repo}
 
   # Make sure mocks are verified when the test exits
   setup :verify_on_exit!
@@ -55,9 +55,9 @@ defmodule RssAssistant.FeedFilterTest do
       # Mock the filter to include first item, exclude second
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn
         %FeedItem{title: "Include This"}, "test prompt" -> 
-          {:ok, %FeedItemDecision{item_id: "include-1", should_include: true, reasoning: "Should include"}}
+          {:ok, {true, "Should include"}}
         %FeedItem{title: "Exclude This"}, "test prompt" -> 
-          {:ok, %FeedItemDecision{item_id: "exclude-1", should_include: false, reasoning: "Should exclude"}}
+          {:ok, {false, "Should exclude"}}
       end)
 
       assert {:ok, filtered_xml} = FeedFilter.filter_feed(rss_xml, "test prompt", filtered_feed_id)
@@ -87,8 +87,8 @@ defmodule RssAssistant.FeedFilterTest do
       </rss>
       """
 
-      expect(RssAssistant.Filter.Mock, :should_include?, 2, fn item, _ -> 
-        {:ok, %FeedItemDecision{item_id: item.generated_id, should_include: true, reasoning: "Include all"}}
+      expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ -> 
+        {:ok, {true, "Include all"}}
       end)
 
       assert {:ok, filtered_xml} = FeedFilter.filter_feed(rss_xml, "include all", filtered_feed_id)
@@ -111,8 +111,8 @@ defmodule RssAssistant.FeedFilterTest do
       </rss>
       """
 
-      expect(RssAssistant.Filter.Mock, :should_include?, 1, fn item, _ -> 
-        {:ok, %FeedItemDecision{item_id: item.generated_id, should_include: false, reasoning: "Exclude all"}}
+      expect(RssAssistant.Filter.Mock, :should_include?, 1, fn _, _ -> 
+        {:ok, {false, "Exclude all"}}
       end)
 
       assert {:ok, filtered_xml} = FeedFilter.filter_feed(rss_xml, "exclude all", filtered_feed_id)
@@ -143,8 +143,8 @@ defmodule RssAssistant.FeedFilterTest do
       </feed>
       """
 
-      expect(RssAssistant.Filter.Mock, :should_include?, 1, fn item, _ -> 
-        {:ok, %FeedItemDecision{item_id: item.generated_id, should_include: true, reasoning: "Include atom entry"}}
+      expect(RssAssistant.Filter.Mock, :should_include?, 1, fn _, _ -> 
+        {:ok, {true, "Include atom entry"}}
       end)
 
       assert {:ok, filtered_xml} = FeedFilter.filter_feed(atom_xml, "test", filtered_feed_id)

@@ -14,7 +14,7 @@ defmodule RssAssistant.Filter.Gemini do
 
   @behaviour RssAssistant.Filter
 
-  alias RssAssistant.{FeedItem, FeedItemDecision}
+  alias RssAssistant.FeedItem
   require Logger
   @model "gemini-2.5-flash-lite-preview-06-17"
 
@@ -22,14 +22,12 @@ defmodule RssAssistant.Filter.Gemini do
   def should_include?(%FeedItem{} = item, prompt) when is_binary(prompt) do
     case analyze_with_gemini(item, prompt) do
       {:ok, {should_include, reasoning}} when is_boolean(should_include) ->
-        decision = FeedItemDecision.new(item.generated_id, should_include, reasoning)
-        {:ok, decision}
+        {:ok, {should_include, reasoning}}
 
       {:error, reason} ->
         Logger.warning("Gemini filter failed: #{inspect(reason)}, including item by default")
-        # Fail-safe: include item when API fails, but don't cache this decision
-        fallback_decision = FeedItemDecision.new(item.generated_id, true, "API failed, included by default")
-        {:error, fallback_decision}
+        # Return error reason to higher level
+        {:error, reason}
     end
   end
 
