@@ -14,16 +14,18 @@ alias RssAssistant.Repo
 alias RssAssistant.Accounts.Plan
 
 # Create default plans
-free_plan = Repo.insert!(%Plan{
-  name: "Free",
-  max_feeds: 0,
-  price: Decimal.new("0.00")
-})
+free_plan =
+  Repo.insert!(%Plan{
+    name: "Free",
+    max_feeds: 0,
+    price: Decimal.new("0.00")
+  })
 
-_pro_plan = Repo.insert!(%Plan{
-  name: "Pro",
-  max_feeds: 100,
-  price: Decimal.new("99.99")
-})
+_pro_plan =
+  Repo.insert!(%Plan{
+    name: "Pro",
+    max_feeds: 100,
+    price: Decimal.new("99.99")
+  })
 
 IO.puts("Created default plans with IDs: Free (#{free_plan.id})")

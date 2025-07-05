@@ -8,7 +8,7 @@ defmodule RssAssistant.Accounts.User do
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
     field :confirmed_at, :utc_datetime
-    
+
     belongs_to :plan, RssAssistant.Accounts.Plan
     has_many :filtered_feeds, RssAssistant.FilteredFeed
 

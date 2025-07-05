@@ -12,9 +12,9 @@ defmodule RssAssistant.FilteredFeedFixtures do
       url: "https://example.com/feed.xml",
       prompt: "Filter out sports content"
     }
-    
+
     attrs = Enum.into(attrs, default_attrs)
-    
+
     # Add user_id if not provided
     if Map.has_key?(attrs, :user_id) do
       attrs

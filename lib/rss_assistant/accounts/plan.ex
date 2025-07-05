@@ -6,7 +6,7 @@ defmodule RssAssistant.Accounts.Plan do
     field :name, :string
     field :max_feeds, :integer
     field :price, :decimal
-    
+
     has_many :users, RssAssistant.Accounts.User
 
     timestamps(type: :utc_datetime)

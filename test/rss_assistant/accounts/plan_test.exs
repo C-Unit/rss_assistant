@@ -18,7 +18,7 @@ defmodule RssAssistant.Accounts.PlanTest do
     test "requires name" do
       attrs = %{max_feeds: 5, price: Decimal.new("9.99")}
       changeset = Plan.changeset(%Plan{}, attrs)
-      
+
       refute changeset.valid?
       assert "can't be blank" in errors_on(changeset).name
     end
@@ -26,7 +26,7 @@ defmodule RssAssistant.Accounts.PlanTest do
     test "requires max_feeds" do
       attrs = %{name: "Basic", price: Decimal.new("9.99")}
       changeset = Plan.changeset(%Plan{}, attrs)
-      
+
       refute changeset.valid?
       assert "can't be blank" in errors_on(changeset).max_feeds
     end
@@ -34,10 +34,9 @@ defmodule RssAssistant.Accounts.PlanTest do
     test "requires price" do
       attrs = %{name: "Basic", max_feeds: 5}
       changeset = Plan.changeset(%Plan{}, attrs)
-      
+
       refute changeset.valid?
       assert "can't be blank" in errors_on(changeset).price
     end
   end
-
 end

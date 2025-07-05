@@ -386,6 +386,7 @@ defmodule RssAssistant.Accounts do
   """
   def change_user_plan(user_id, plan_id) when is_integer(user_id) and is_integer(plan_id) do
     user = Repo.get!(User, user_id)
+
     user
     |> Ecto.Changeset.change(plan_id: plan_id)
     |> Repo.update()
@@ -446,8 +447,9 @@ defmodule RssAssistant.Accounts do
 
   def get_user_feeds(user_id) when is_integer(user_id) do
     from(f in RssAssistant.FilteredFeed,
-         where: f.user_id == ^user_id,
-         order_by: [desc: f.inserted_at])
+      where: f.user_id == ^user_id,
+      order_by: [desc: f.inserted_at]
+    )
     |> Repo.all()
   end
 end

@@ -71,7 +71,11 @@ defmodule RssAssistant.FeedFilterCachingTest do
   end
 
   describe "decision caching" do
-    test "first evaluation calls filter and caches decision", %{filtered_feed: filtered_feed, rss_content: rss_content, prompt: prompt} do
+    test "first evaluation calls filter and caches decision", %{
+      filtered_feed: filtered_feed,
+      rss_content: rss_content,
+      prompt: prompt
+    } do
       # Setup mock expectations
       MockFilter
       |> expect(:should_include?, fn %FeedItem{generated_id: "item1-guid"}, ^prompt ->
@@ -99,7 +103,11 @@ defmodule RssAssistant.FeedFilterCachingTest do
       assert item2_decision.filtered_feed_id == filtered_feed.id
     end
 
-    test "second evaluation uses cached decisions without calling filter", %{filtered_feed: filtered_feed, rss_content: rss_content, prompt: prompt} do
+    test "second evaluation uses cached decisions without calling filter", %{
+      filtered_feed: filtered_feed,
+      rss_content: rss_content,
+      prompt: prompt
+    } do
       # Pre-populate cache with decisions
       {:ok, _} =
         %FeedItemDecision{}
@@ -133,10 +141,14 @@ defmodule RssAssistant.FeedFilterCachingTest do
       # Verify that only the included item (item1) appears in filtered feed
       assert filtered_xml =~ "Test Item 1"
       refute filtered_xml =~ "Test Item 2"
-      assert filtered_xml =~ "Test Item 3"  # No generated_id, included by default
+      # No generated_id, included by default
+      assert filtered_xml =~ "Test Item 3"
     end
 
-    test "items without generated_id are included without evaluation or caching", %{filtered_feed: filtered_feed, prompt: prompt} do
+    test "items without generated_id are included without evaluation or caching", %{
+      filtered_feed: filtered_feed,
+      prompt: prompt
+    } do
       # RSS with item that cannot generate ID (no guid, link, or title)
       rss_no_id = """
       <?xml version="1.0" encoding="UTF-8"?>
@@ -168,7 +180,10 @@ defmodule RssAssistant.FeedFilterCachingTest do
       assert length(decisions) == 0
     end
 
-    test "decisions are cached separately per filtered_feed_id", %{rss_content: rss_content, prompt: prompt} do
+    test "decisions are cached separately per filtered_feed_id", %{
+      rss_content: rss_content,
+      prompt: prompt
+    } do
       # Create user for feeds
       user = user_fixture()
 
@@ -195,11 +210,14 @@ defmodule RssAssistant.FeedFilterCachingTest do
       MockFilter
       |> expect(:should_include?, 6, fn item, ^prompt ->
         reasoning = "Feed specific decision"
-        should_include = case item.generated_id do
-          "item1-guid" -> true
-          "item2-guid" -> false
-          _generated_id -> true
-        end
+
+        should_include =
+          case item.generated_id do
+            "item1-guid" -> true
+            "item2-guid" -> false
+            _generated_id -> true
+          end
+
         {:ok, {should_include, reasoning}}
       end)
 
@@ -208,8 +226,11 @@ defmodule RssAssistant.FeedFilterCachingTest do
       {:ok, _} = FeedFilter.filter_feed(rss_content, prompt, feed2.id)
 
       # Verify separate decisions are stored for each feed
-      feed1_decisions = Repo.all(from d in FeedItemDecision, where: d.filtered_feed_id == ^feed1.id)
-      feed2_decisions = Repo.all(from d in FeedItemDecision, where: d.filtered_feed_id == ^feed2.id)
+      feed1_decisions =
+        Repo.all(from d in FeedItemDecision, where: d.filtered_feed_id == ^feed1.id)
+
+      feed2_decisions =
+        Repo.all(from d in FeedItemDecision, where: d.filtered_feed_id == ^feed2.id)
 
       assert length(feed1_decisions) == 3
       assert length(feed2_decisions) == 3
@@ -224,7 +245,11 @@ defmodule RssAssistant.FeedFilterCachingTest do
       end)
     end
 
-    test "partial cache hits work correctly", %{filtered_feed: filtered_feed, rss_content: rss_content, prompt: prompt} do
+    test "partial cache hits work correctly", %{
+      filtered_feed: filtered_feed,
+      rss_content: rss_content,
+      prompt: prompt
+    } do
       # Pre-populate cache with decision for only one item
       {:ok, _} =
         %FeedItemDecision{}
@@ -245,16 +270,23 @@ defmodule RssAssistant.FeedFilterCachingTest do
       {:ok, filtered_xml} = FeedFilter.filter_feed(rss_content, prompt, filtered_feed.id)
 
       # Verify results
-      assert filtered_xml =~ "Test Item 1"  # Cached as included
-      refute filtered_xml =~ "Test Item 2"  # New decision as excluded
-      assert filtered_xml =~ "Test Item 3"  # No ID, included by default
+      # Cached as included
+      assert filtered_xml =~ "Test Item 1"
+      # New decision as excluded
+      refute filtered_xml =~ "Test Item 2"
+      # No ID, included by default
+      assert filtered_xml =~ "Test Item 3"
 
       # Verify only one new decision was stored
       decisions = Repo.all(FeedItemDecision)
       assert length(decisions) == 2
     end
 
-    test "filter errors result in items being included by default", %{filtered_feed: filtered_feed, rss_content: rss_content, prompt: prompt} do
+    test "filter errors result in items being included by default", %{
+      filtered_feed: filtered_feed,
+      rss_content: rss_content,
+      prompt: prompt
+    } do
       # Mock filter that raises an error
       MockFilter
       |> expect(:should_include?, 2, fn _, _ ->
@@ -273,7 +305,11 @@ defmodule RssAssistant.FeedFilterCachingTest do
       assert length(decisions) == 0
     end
 
-    test "fallback decisions are not cached", %{filtered_feed: filtered_feed, rss_content: rss_content, prompt: prompt} do
+    test "fallback decisions are not cached", %{
+      filtered_feed: filtered_feed,
+      rss_content: rss_content,
+      prompt: prompt
+    } do
       # Mock filter that returns error tuples (simulating API failures)
       MockFilter
       |> expect(:should_include?, 4, fn item, ^prompt ->
@@ -305,7 +341,11 @@ defmodule RssAssistant.FeedFilterCachingTest do
       assert length(decisions) == 0
     end
 
-    test "database storage errors don't prevent filtering", %{filtered_feed: filtered_feed, rss_content: rss_content, prompt: prompt} do
+    test "database storage errors don't prevent filtering", %{
+      filtered_feed: filtered_feed,
+      rss_content: rss_content,
+      prompt: prompt
+    } do
       # Delete the filtered feed to cause foreign key constraint errors
       Repo.delete!(filtered_feed)
 
@@ -324,7 +364,11 @@ defmodule RssAssistant.FeedFilterCachingTest do
   end
 
   describe "mock call verification" do
-    test "verifies exact number of filter calls for cache behavior", %{filtered_feed: filtered_feed, rss_content: rss_content, prompt: prompt} do
+    test "verifies exact number of filter calls for cache behavior", %{
+      filtered_feed: filtered_feed,
+      rss_content: rss_content,
+      prompt: prompt
+    } do
       # First call - should hit filter for both items with generated_id
       MockFilter
       |> expect(:should_include?, 2, fn _item, ^prompt ->

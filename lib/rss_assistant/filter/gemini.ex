@@ -94,7 +94,8 @@ defmodule RssAssistant.Filter.Gemini do
         },
         "required" => ["should_include", "reasoning"]
       },
-      temperature: 0.1,  # Low temperature for consistent responses
+      # Low temperature for consistent responses
+      temperature: 0.1,
       max_output_tokens: 200
     }
 

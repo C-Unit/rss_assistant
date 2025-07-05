@@ -21,11 +21,11 @@ defmodule RssAssistantWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
-    
+
     # RSS feeds are public (but scoped to user in controller)
     get "/filtered_feeds/:slug/rss", FilteredFeedController, :rss_feed
   end
-  
+
   scope "/", RssAssistantWeb do
     pipe_through [:browser, :require_authenticated_user]
 

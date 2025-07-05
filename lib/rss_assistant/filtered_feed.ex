@@ -6,7 +6,7 @@ defmodule RssAssistant.FilteredFeed do
     field :url, :string
     field :prompt, :string
     field :slug, :string
-    
+
     belongs_to :user, RssAssistant.Accounts.User
 
     timestamps(type: :utc_datetime)

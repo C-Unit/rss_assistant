@@ -20,7 +20,10 @@ defmodule RssAssistantWeb.FilteredFeedController do
       current_count = Accounts.get_user_feed_count(user)
 
       conn
-      |> put_flash(:error, "You have reached your plan limit of #{plan.max_feeds} filtered feeds. You currently have #{current_count} feeds.")
+      |> put_flash(
+        :error,
+        "You have reached your plan limit of #{plan.max_feeds} filtered feeds. You currently have #{current_count} feeds."
+      )
       |> redirect(to: ~p"/")
     end
   end
@@ -46,7 +49,10 @@ defmodule RssAssistantWeb.FilteredFeedController do
       current_count = Accounts.get_user_feed_count(user)
 
       conn
-      |> put_flash(:error, "You have reached your plan limit of #{plan.max_feeds} filtered feeds. You currently have #{current_count} feeds.")
+      |> put_flash(
+        :error,
+        "You have reached your plan limit of #{plan.max_feeds} filtered feeds. You currently have #{current_count} feeds."
+      )
       |> redirect(to: ~p"/")
     end
   end
@@ -59,7 +65,12 @@ defmodule RssAssistantWeb.FilteredFeedController do
     filtered_feed = Repo.get_by!(FilteredFeed, slug: slug, user_id: user.id)
     changeset = FilteredFeed.changeset(filtered_feed, %{})
     filtered_items = get_filtered_items(filtered_feed.id)
-    render(conn, :show, filtered_feed: filtered_feed, changeset: changeset, filtered_items: filtered_items)
+
+    render(conn, :show,
+      filtered_feed: filtered_feed,
+      changeset: changeset,
+      filtered_items: filtered_items
+    )
   end
 
   def update(conn, %{"slug" => slug, "filtered_feed" => filtered_feed_params}) do
@@ -76,7 +87,12 @@ defmodule RssAssistantWeb.FilteredFeedController do
 
       {:error, changeset} ->
         filtered_items = get_filtered_items(filtered_feed.id)
-        render(conn, :show, filtered_feed: filtered_feed, changeset: changeset, filtered_items: filtered_items)
+
+        render(conn, :show,
+          filtered_feed: filtered_feed,
+          changeset: changeset,
+          filtered_items: filtered_items
+        )
     end
   end
 
@@ -136,11 +152,12 @@ defmodule RssAssistantWeb.FilteredFeedController do
   end
 
   defp get_filtered_items(filtered_feed_id) do
-    query = from d in FeedItemDecision,
-      where: d.filtered_feed_id == ^filtered_feed_id and d.should_include == false,
-      order_by: [desc: d.inserted_at],
-      limit: 20,
-      select: d
+    query =
+      from d in FeedItemDecision,
+        where: d.filtered_feed_id == ^filtered_feed_id and d.should_include == false,
+        order_by: [desc: d.inserted_at],
+        limit: 20,
+        select: d
 
     Repo.all(query)
   end
