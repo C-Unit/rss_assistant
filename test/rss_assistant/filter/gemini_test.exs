@@ -3,7 +3,7 @@ defmodule RssAssistant.Filter.GeminiTest do
   import ExUnit.CaptureLog
 
   alias RssAssistant.Filter.Gemini
-  alias RssAssistant.{FeedItem, FeedItemDecision}
+  alias RssAssistant.FeedItem
 
   describe "should_include?/2" do
     test "returns true when Gemini API is not configured (fallback behavior)" do
@@ -18,10 +18,10 @@ defmodule RssAssistant.Filter.GeminiTest do
         categories: ["tech"]
       }
 
-      # Should fall back to including the item when API is not configured
+      # Should return error when API is not configured
       capture_log(fn ->
         result = Gemini.should_include?(item, "filter out sports content")
-        assert {:error, %FeedItemDecision{should_include: true}} = result
+        assert {:error, _reason} = result
       end)
 
       # Restore original config
@@ -40,10 +40,10 @@ defmodule RssAssistant.Filter.GeminiTest do
         categories: []
       }
 
-      # Should still work with minimal data
+      # Should return error with minimal data when API not configured
       capture_log(fn ->
         result = Gemini.should_include?(item, "any filter")
-        assert {:error, %FeedItemDecision{should_include: true}} = result
+        assert {:error, _reason} = result
       end)
 
       # Restore original config
@@ -71,10 +71,10 @@ defmodule RssAssistant.Filter.GeminiTest do
 
       capture_log(fn ->
         result1 = Gemini.should_include?(item_with_categories, "filter tech")
-        assert {:error, %FeedItemDecision{should_include: true}} = result1
+        assert {:error, _reason1} = result1
         
         result2 = Gemini.should_include?(item_without_categories, "filter tech")
-        assert {:error, %FeedItemDecision{should_include: true}} = result2
+        assert {:error, _reason2} = result2
       end)
 
       # Restore original config
@@ -100,9 +100,10 @@ defmodule RssAssistant.Filter.GeminiTest do
           # Test filtering out sports content
           result = Gemini.should_include?(item, "filter out all sports-related content")
           
-          # Result should be a successful tuple with FeedItemDecision
-          assert {:ok, %FeedItemDecision{should_include: should_include}} = result
+          # Result should be a successful tuple with decision
+          assert {:ok, {should_include, reasoning}} = result
           assert is_boolean(should_include)
+          assert is_binary(reasoning)
           
           # For sports content with "filter out sports" prompt, 
           # we expect it might be filtered out (false), but due to API variability
@@ -130,8 +131,9 @@ defmodule RssAssistant.Filter.GeminiTest do
           result = Gemini.should_include?(item, "filter out all sports-related content")
           
           # Should likely be true for non-sports content, but we just verify valid decision
-          assert {:ok, %FeedItemDecision{should_include: should_include}} = result
+          assert {:ok, {should_include, reasoning}} = result
           assert is_boolean(should_include)
+          assert is_binary(reasoning)
       end
     end
   end
@@ -155,8 +157,7 @@ defmodule RssAssistant.Filter.GeminiTest do
       capture_log(fn ->
         # Should handle the full item data without errors
         result = Gemini.should_include?(item, "detailed filtering criteria")
-        assert {:error, %FeedItemDecision{should_include: should_include}} = result
-        assert is_boolean(should_include)
+        assert {:error, _reason} = result
       end)
 
       # Restore original config

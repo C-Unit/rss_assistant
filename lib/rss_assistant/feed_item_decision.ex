@@ -1,47 +1,9 @@
 defmodule RssAssistant.FeedItemDecision do
   @moduledoc """
-  Represents a filtering decision for a specific feed item.
-  
-  This struct contains the decision result from a filter implementation,
-  including the item ID, whether it should be included, and reasoning.
-  """
-
-  @type t :: %__MODULE__{
-          item_id: String.t() | nil,
-          should_include: boolean(),
-          reasoning: String.t() | nil,
-          title: String.t() | nil,
-          description: String.t() | nil,
-          timestamp: DateTime.t() | nil
-        }
-
-  defstruct [
-    :item_id,
-    :should_include,
-    :reasoning,
-    :title,
-    :description,
-    :timestamp
-  ]
-
-  @doc """
-  Creates a new FeedItemDecision struct.
-  """
-  def new(item_id, should_include, reasoning \\ nil, title \\ nil, description \\ nil) do
-    %__MODULE__{
-      item_id: item_id,
-      should_include: should_include,
-      reasoning: reasoning,
-      title: title,
-      description: description,
-      timestamp: DateTime.utc_now()
-    }
-  end
-end
-
-defmodule RssAssistant.FeedItemDecisionSchema do
-  @moduledoc """
   Ecto schema for persisting feed item decisions.
+
+  Represents a filtering decision for a specific feed item,
+  including the item ID, whether it should be included, and reasoning.
   """
 
   use Ecto.Schema
@@ -58,7 +20,9 @@ defmodule RssAssistant.FeedItemDecisionSchema do
     timestamps(type: :utc_datetime)
   end
 
-  @doc false
+  @doc """
+  Creates a changeset for a feed item decision.
+  """
   def changeset(feed_item_decision, attrs) do
     feed_item_decision
     |> cast(attrs, [:item_id, :should_include, :reasoning, :title, :description, :filtered_feed_id])

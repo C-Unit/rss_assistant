@@ -281,8 +281,8 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
       feed = filtered_feed_fixture(%{user_id: user.id})
 
       # Create excluded item
-      {:ok, _excluded} = %RssAssistant.FeedItemDecisionSchema{}
-      |> RssAssistant.FeedItemDecisionSchema.changeset(%{
+      {:ok, _excluded} = %RssAssistant.FeedItemDecision{}
+      |> RssAssistant.FeedItemDecision.changeset(%{
         item_id: "excluded",
         should_include: false,
         reasoning: "Contains sports content",
@@ -293,8 +293,8 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
       |> Repo.insert()
 
       # Create included item
-      {:ok, _included} = %RssAssistant.FeedItemDecisionSchema{}
-      |> RssAssistant.FeedItemDecisionSchema.changeset(%{
+      {:ok, _included} = %RssAssistant.FeedItemDecision{}
+      |> RssAssistant.FeedItemDecision.changeset(%{
         item_id: "included",
         should_include: true,
         reasoning: "Allowed through",
@@ -321,8 +321,8 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
 
       # Create 25 filtered items
       for i <- 1..25 do
-        {:ok, _item} = %RssAssistant.FeedItemDecisionSchema{}
-        |> RssAssistant.FeedItemDecisionSchema.changeset(%{
+        {:ok, _item} = %RssAssistant.FeedItemDecision{}
+        |> RssAssistant.FeedItemDecision.changeset(%{
           item_id: "item#{i}",
           should_include: false,
           reasoning: "Test reason #{i}",

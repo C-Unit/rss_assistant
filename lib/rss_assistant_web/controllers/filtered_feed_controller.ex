@@ -4,7 +4,7 @@ defmodule RssAssistantWeb.FilteredFeedController do
   alias RssAssistant.FilteredFeed
   alias RssAssistant.Repo
   alias RssAssistant.FeedFilter
-  alias RssAssistant.FeedItemDecisionSchema
+  alias RssAssistant.FeedItemDecision
   alias RssAssistant.Accounts
   import Ecto.Query
 
@@ -136,7 +136,7 @@ defmodule RssAssistantWeb.FilteredFeedController do
   end
 
   defp get_filtered_items(filtered_feed_id) do
-    query = from d in FeedItemDecisionSchema,
+    query = from d in FeedItemDecision,
       where: d.filtered_feed_id == ^filtered_feed_id and d.should_include == false,
       order_by: [desc: d.inserted_at],
       limit: 20,
