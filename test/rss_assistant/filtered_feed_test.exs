@@ -15,7 +15,7 @@ defmodule RssAssistant.FilteredFeedTest do
 
     test "validates URL format" do
       user = user_fixture()
-      
+
       changeset =
         FilteredFeed.changeset(%FilteredFeed{}, %{
           url: "not-a-url",
@@ -28,7 +28,7 @@ defmodule RssAssistant.FilteredFeedTest do
 
     test "accepts valid HTTP URLs" do
       user = user_fixture()
-      
+
       changeset =
         FilteredFeed.changeset(%FilteredFeed{}, %{
           url: "http://example.com/feed.xml",
@@ -41,7 +41,7 @@ defmodule RssAssistant.FilteredFeedTest do
 
     test "accepts valid HTTPS URLs" do
       user = user_fixture()
-      
+
       changeset =
         FilteredFeed.changeset(%FilteredFeed{}, %{
           url: "https://example.com/feed.xml",
@@ -54,7 +54,7 @@ defmodule RssAssistant.FilteredFeedTest do
 
     test "generates a slug automatically" do
       user = user_fixture()
-      
+
       changeset =
         FilteredFeed.changeset(%FilteredFeed{}, %{
           url: "https://example.com/feed.xml",
@@ -70,7 +70,7 @@ defmodule RssAssistant.FilteredFeedTest do
 
     test "does not generate slug if changeset is invalid" do
       user = user_fixture()
-      
+
       changeset =
         FilteredFeed.changeset(%FilteredFeed{}, %{
           url: "not-a-url",
@@ -82,5 +82,4 @@ defmodule RssAssistant.FilteredFeedTest do
       assert get_change(changeset, :slug) == nil
     end
   end
-
 end

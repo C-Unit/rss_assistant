@@ -1,6 +1,6 @@
 defmodule RssAssistantWeb.PageController do
   use RssAssistantWeb, :controller
-  
+
   alias RssAssistant.Accounts
 
   def home(conn, _params) do
@@ -8,8 +8,8 @@ defmodule RssAssistantWeb.PageController do
       plan = Accounts.get_user_plan(user)
       feed_count = Accounts.get_user_feed_count(user)
       user_feeds = Accounts.get_user_feeds(user)
-      
-      render(conn, :home, 
+
+      render(conn, :home,
         layout: false,
         user: user,
         plan: plan,

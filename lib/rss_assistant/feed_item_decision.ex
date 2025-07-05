@@ -25,7 +25,14 @@ defmodule RssAssistant.FeedItemDecision do
   """
   def changeset(feed_item_decision, attrs) do
     feed_item_decision
-    |> cast(attrs, [:item_id, :should_include, :reasoning, :title, :description, :filtered_feed_id])
+    |> cast(attrs, [
+      :item_id,
+      :should_include,
+      :reasoning,
+      :title,
+      :description,
+      :filtered_feed_id
+    ])
     |> validate_required([:item_id, :should_include, :filtered_feed_id])
     |> unique_constraint([:item_id, :filtered_feed_id])
   end

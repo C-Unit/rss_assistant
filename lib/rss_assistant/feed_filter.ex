@@ -25,7 +25,8 @@ defmodule RssAssistant.FeedFilter do
     * `{:error, reason}` - Error occurred, original feed should be returned
   """
   @spec filter_feed(String.t(), String.t(), integer()) :: {:ok, String.t()} | {:error, term()}
-  def filter_feed(xml_content, prompt, filtered_feed_id) when is_binary(xml_content) and is_binary(prompt) and is_integer(filtered_feed_id) do
+  def filter_feed(xml_content, prompt, filtered_feed_id)
+      when is_binary(xml_content) and is_binary(prompt) and is_integer(filtered_feed_id) do
     with {:ok, items} <- FeedParser.parse_feed(xml_content),
          filtered_items <- filter_items(items, prompt, filtered_feed_id),
          {:ok, filtered_xml} <- rebuild_feed(xml_content, filtered_items) do
@@ -46,7 +47,8 @@ defmodule RssAssistant.FeedFilter do
       try do
         case get_or_create_decision(item, prompt, filtered_feed_id, filter_impl) do
           %FeedItemDecision{should_include: should_include} -> should_include
-          _ -> true  # Default to include if decision cant be determined
+          # Default to include if decision cant be determined
+          _ -> true
         end
       rescue
         # Include item if filtering fails
@@ -56,24 +58,34 @@ defmodule RssAssistant.FeedFilter do
   end
 
   # Get cached decision or create new one
-  defp get_or_create_decision(%FeedItem{generated_id: nil}, _prompt, _filtered_feed_id, _filter_impl) do
+  defp get_or_create_decision(
+         %FeedItem{generated_id: nil},
+         _prompt,
+         _filtered_feed_id,
+         _filter_impl
+       ) do
     # No generated_id, include by default without evaluation or caching
     %FeedItemDecision{should_include: true, reasoning: "No generated_id, included by default"}
   end
 
-
-  defp get_or_create_decision(%FeedItem{generated_id: item_id} = item, prompt, filtered_feed_id, filter_impl) do
+  defp get_or_create_decision(
+         %FeedItem{generated_id: item_id} = item,
+         prompt,
+         filtered_feed_id,
+         filter_impl
+       ) do
     case get_cached_decision(item_id, filtered_feed_id) do
       nil ->
         with {:ok, {should_include, reasoning}} <- filter_impl.should_include?(item, prompt),
-             changeset <- FeedItemDecision.changeset(%FeedItemDecision{}, %{
-               item_id: item.generated_id,
-               should_include: should_include,
-               reasoning: reasoning,
-               title: item.title,
-               description: item.description,
-               filtered_feed_id: filtered_feed_id
-             }),
+             changeset <-
+               FeedItemDecision.changeset(%FeedItemDecision{}, %{
+                 item_id: item.generated_id,
+                 should_include: should_include,
+                 reasoning: reasoning,
+                 title: item.title,
+                 description: item.description,
+                 filtered_feed_id: filtered_feed_id
+               }),
              {:ok, decision} <- Repo.insert(changeset) do
           decision
         end
@@ -85,9 +97,10 @@ defmodule RssAssistant.FeedFilter do
 
   # Retrieve cached decision from database
   defp get_cached_decision(item_id, filtered_feed_id) do
-    query = from d in FeedItemDecision,
-      where: d.item_id == ^item_id and d.filtered_feed_id == ^filtered_feed_id,
-      select: d
+    query =
+      from d in FeedItemDecision,
+        where: d.item_id == ^item_id and d.filtered_feed_id == ^filtered_feed_id,
+        select: d
 
     Repo.one(query)
   end

@@ -113,7 +113,11 @@ defmodule RssAssistant.IntegrationTest do
       end)
 
       assert {:ok, filtered_xml} =
-               FeedFilter.filter_feed(@nytimes_sample_xml, "filter out sports content", filtered_feed_id)
+               FeedFilter.filter_feed(
+                 @nytimes_sample_xml,
+                 "filter out sports content",
+                 filtered_feed_id
+               )
 
       # Should include Iran and Tech stories
       assert filtered_xml =~ "Europe to Hold Talks With Iran on Friday"
@@ -148,7 +152,8 @@ defmodule RssAssistant.IntegrationTest do
         {:ok, {true, "Preserve structure test"}}
       end)
 
-      assert {:ok, filtered_xml} = FeedFilter.filter_feed(@nytimes_sample_xml, "test", filtered_feed_id)
+      assert {:ok, filtered_xml} =
+               FeedFilter.filter_feed(@nytimes_sample_xml, "test", filtered_feed_id)
 
       # Check RSS metadata is preserved
       assert filtered_xml =~ "NYT &gt; Top Stories"

@@ -86,7 +86,8 @@ defmodule RssAssistant.AccountsTest do
     end
 
     test "registers users with a hashed password" do
-      free_plan_fixture()  # Ensure Free plan exists
+      # Ensure Free plan exists
+      free_plan_fixture()
       email = unique_user_email()
       {:ok, user} = Accounts.register_user(valid_user_attributes(email: email))
       assert user.email == email
@@ -585,12 +586,12 @@ defmodule RssAssistant.AccountsTest do
     test "can_create_feed?/1 returns false for pro plan at limit", %{pro_plan: pro_plan} do
       user = user_fixture()
       {:ok, updated_user} = Accounts.change_user_plan(user, pro_plan.id)
-      
+
       # Create feeds up to the limit
       for _i <- 1..100 do
         filtered_feed_fixture(%{user_id: updated_user.id})
       end
-      
+
       user = Repo.preload(updated_user, :plan, force: true)
       refute Accounts.can_create_feed?(user)
     end
@@ -598,19 +599,19 @@ defmodule RssAssistant.AccountsTest do
     test "get_user_feed_count/1 with user struct" do
       user = user_fixture()
       assert Accounts.get_user_feed_count(user) == 0
-      
+
       filtered_feed_fixture(%{user_id: user.id})
       filtered_feed_fixture(%{user_id: user.id})
-      
+
       assert Accounts.get_user_feed_count(user) == 2
     end
 
     test "get_user_feed_count/1 with user id" do
       user = user_fixture()
       assert Accounts.get_user_feed_count(user.id) == 0
-      
+
       filtered_feed_fixture(%{user_id: user.id})
-      
+
       assert Accounts.get_user_feed_count(user.id) == 1
     end
 
@@ -618,10 +619,10 @@ defmodule RssAssistant.AccountsTest do
       user = user_fixture()
       feed1 = filtered_feed_fixture(%{user_id: user.id})
       feed2 = filtered_feed_fixture(%{user_id: user.id})
-      
+
       feeds = Accounts.get_user_feeds(user)
       feed_ids = Enum.map(feeds, & &1.id)
-      
+
       assert length(feeds) == 2
       assert feed1.id in feed_ids
       assert feed2.id in feed_ids
@@ -630,48 +631,51 @@ defmodule RssAssistant.AccountsTest do
     test "get_user_feeds/1 with user id" do
       user = user_fixture()
       feed = filtered_feed_fixture(%{user_id: user.id})
-      
+
       feeds = Accounts.get_user_feeds(user.id)
-      
+
       assert length(feeds) == 1
       assert hd(feeds).id == feed.id
     end
 
     test "get_user_feeds/1 orders by most recent" do
       user = user_fixture()
-      
+
       # Create feeds with explicit timestamps
       older_time = ~U[2023-01-01 10:00:00Z]
       newer_time = ~U[2023-01-01 11:00:00Z]
-      
-      _feed1 = %RssAssistant.FilteredFeed{}
-      |> RssAssistant.FilteredFeed.changeset(%{
-        user_id: user.id,
-        url: "https://example.com/old.xml",
-        prompt: "Old feed"
-      })
-      |> Ecto.Changeset.put_change(:inserted_at, older_time)
-      |> Repo.insert!()
-      
-      feed2 = %RssAssistant.FilteredFeed{}
-      |> RssAssistant.FilteredFeed.changeset(%{
-        user_id: user.id,
-        url: "https://example.com/new.xml", 
-        prompt: "New feed"
-      })
-      |> Ecto.Changeset.put_change(:inserted_at, newer_time)
-      |> Repo.insert!()
-      
+
+      _feed1 =
+        %RssAssistant.FilteredFeed{}
+        |> RssAssistant.FilteredFeed.changeset(%{
+          user_id: user.id,
+          url: "https://example.com/old.xml",
+          prompt: "Old feed"
+        })
+        |> Ecto.Changeset.put_change(:inserted_at, older_time)
+        |> Repo.insert!()
+
+      feed2 =
+        %RssAssistant.FilteredFeed{}
+        |> RssAssistant.FilteredFeed.changeset(%{
+          user_id: user.id,
+          url: "https://example.com/new.xml",
+          prompt: "New feed"
+        })
+        |> Ecto.Changeset.put_change(:inserted_at, newer_time)
+        |> Repo.insert!()
+
       feeds = Accounts.get_user_feeds(user)
-      
+
       assert length(feeds) == 2
-      assert hd(feeds).id == feed2.id  # Most recent first
+      # Most recent first
+      assert hd(feeds).id == feed2.id
     end
 
     test "list_plans/0" do
       plans = Accounts.list_plans()
       plan_names = Enum.map(plans, & &1.name)
-      
+
       assert "Free" in plan_names
       assert "Pro" in plan_names
     end

@@ -72,7 +72,7 @@ defmodule RssAssistant.Filter.GeminiTest do
       capture_log(fn ->
         result1 = Gemini.should_include?(item_with_categories, "filter tech")
         assert {:error, _reason1} = result1
-        
+
         result2 = Gemini.should_include?(item_without_categories, "filter tech")
         assert {:error, _reason2} = result2
       end)
@@ -99,19 +99,19 @@ defmodule RssAssistant.Filter.GeminiTest do
 
           # Test filtering out sports content
           result = Gemini.should_include?(item, "filter out all sports-related content")
-          
+
           # Result should be a successful tuple with decision
           assert {:ok, {should_include, reasoning}} = result
           assert is_boolean(should_include)
           assert is_binary(reasoning)
-          
+
           # For sports content with "filter out sports" prompt, 
           # we expect it might be filtered out (false), but due to API variability
           # we just test that we get a valid response
       end
     end
 
-    @tag :integration  
+    @tag :integration
     test "includes non-sports content when filtering sports" do
       # Only run this test if GEMINI_API_KEY is set
       case System.get_env("GEMINI_API_KEY") do
@@ -129,7 +129,7 @@ defmodule RssAssistant.Filter.GeminiTest do
 
           # Test that non-sports content is included when filtering sports
           result = Gemini.should_include?(item, "filter out all sports-related content")
-          
+
           # Should likely be true for non-sports content, but we just verify valid decision
           assert {:ok, {should_include, reasoning}} = result
           assert is_boolean(should_include)

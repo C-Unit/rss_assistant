@@ -11,20 +11,25 @@
     <%= if assigns[:user] do %>
       <div class="mt-8 bg-gray-50 rounded-lg p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Your Dashboard</h2>
-        
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div class="bg-white p-4 rounded-lg shadow">
             <p class="text-sm text-gray-600">Current Plan</p>
-            <p class="text-xl font-semibold text-gray-900"><%= @plan.name %></p>
+            <p class="text-xl font-semibold text-gray-900">{@plan.name}</p>
           </div>
           <div class="bg-white p-4 rounded-lg shadow">
             <p class="text-sm text-gray-600">Feeds Created</p>
-            <p class="text-xl font-semibold text-gray-900"><%= @feed_count %> / <%= if @plan.max_feeds == 0, do: "0", else: @plan.max_feeds %></p>
+            <p class="text-xl font-semibold text-gray-900">
+              {@feed_count} / {if @plan.max_feeds == 0, do: "0", else: @plan.max_feeds}
+            </p>
           </div>
           <div class="bg-white p-4 rounded-lg shadow">
             <p class="text-sm text-gray-600">Status</p>
-            <p class={["text-xl font-semibold", if(@can_create_feed, do: "text-green-600", else: "text-red-600")]}>
-              <%= if @can_create_feed, do: "Can Create", else: "Limit Reached" %>
+            <p class={[
+              "text-xl font-semibold",
+              if(@can_create_feed, do: "text-green-600", else: "text-red-600")
+            ]}>
+              {if @can_create_feed, do: "Can Create", else: "Limit Reached"}
             </p>
           </div>
         </div>
@@ -41,7 +46,7 @@
         <% else %>
           <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
             <p class="text-sm text-yellow-800">
-              You've reached your plan limit of <%= @plan.max_feeds %> filtered feeds. 
+              You've reached your plan limit of {@plan.max_feeds} filtered feeds.
               Contact support to upgrade your plan.
             </p>
           </div>
@@ -54,16 +59,27 @@
               <%= for feed <- @user_feeds do %>
                 <div class="bg-white p-4 rounded-lg shadow flex justify-between items-center">
                   <div>
-                    <p class="font-medium text-gray-900">Feed: <%= String.slice(feed.url, 0, 50) %><%= if String.length(feed.url) > 50, do: "..." %></p>
-                    <p class="text-sm text-gray-600">Prompt: <%= String.slice(feed.prompt, 0, 100) %><%= if String.length(feed.prompt) > 100, do: "..." %></p>
+                    <p class="font-medium text-gray-900">
+                      Feed: {String.slice(feed.url, 0, 50)}{if String.length(feed.url) > 50,
+                        do: "..."}
+                    </p>
+                    <p class="text-sm text-gray-600">
+                      Prompt: {String.slice(feed.prompt, 0, 100)}{if String.length(feed.prompt) >
+                                                                       100,
+                                                                     do: "..."}
+                    </p>
                   </div>
                   <div class="flex space-x-2">
-                    <a href={~p"/filtered_feeds/#{feed.slug}"} 
-                       class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    <a
+                      href={~p"/filtered_feeds/#{feed.slug}"}
+                      class="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
                       View
                     </a>
-                    <a href={~p"/filtered_feeds/#{feed.slug}/rss"} 
-                       class="text-green-600 hover:text-green-800 text-sm font-medium">
+                    <a
+                      href={~p"/filtered_feeds/#{feed.slug}/rss"}
+                      class="text-green-600 hover:text-green-800 text-sm font-medium"
+                    >
                       RSS
                     </a>
                   </div>

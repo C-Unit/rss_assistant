@@ -21,6 +21,6 @@ defmodule RssAssistant.Filter do
     * `{:ok, {should_include, reasoning}}` - Successful decision with boolean and reasoning
     * `{:error, reason}` - Error reason when filter implementation fails
   """
-  @callback should_include?(item :: FeedItem.t(), prompt :: String.t()) :: 
-    {:ok, {boolean(), String.t()}} | {:error, term()}
+  @callback should_include?(item :: FeedItem.t(), prompt :: String.t()) ::
+              {:ok, {boolean(), String.t()}} | {:error, term()}
 end
