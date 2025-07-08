@@ -26,7 +26,7 @@ defmodule RssAssistant.Filter.Gemini do
 
       {:error, {:api_error, {:rate_limit, retry_after_seconds}}} ->
         Logger.info("Gemini API rate limited, retry after #{retry_after_seconds} seconds")
-        {:retry, retry_after_seconds}
+        {:retry, retry_after_seconds * 1000}
 
       {:error, reason} ->
         Logger.warning("Gemini filter failed: #{inspect(reason)}, including item by default")

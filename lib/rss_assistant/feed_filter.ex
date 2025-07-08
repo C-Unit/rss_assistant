@@ -106,9 +106,9 @@ defmodule RssAssistant.FeedFilter do
       {:ok, {should_include, reasoning}} ->
         {:ok, {should_include, reasoning}}
       
-      {:retry, retry_after_seconds} ->
+      {:retry, retry_after_ms} ->
         # Sleep for the specific retry delay and try again
-        Process.sleep(retry_after_seconds * 1000)
+        Process.sleep(retry_after_ms)
         filter_impl.should_include?(item, prompt)
       
       {:error, _reason} ->

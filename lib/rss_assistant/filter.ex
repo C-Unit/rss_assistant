@@ -19,7 +19,7 @@ defmodule RssAssistant.Filter do
   ## Returns
 
     * `{:ok, {should_include, reasoning}}` - Successful decision with boolean and reasoning
-    * `{:retry, retry_after_seconds}` - Rate limited, retry after specified seconds
+    * `{:retry, retry_after_ms}` - Rate limited, retry after specified milliseconds
     * `{:error, reason}` - Error reason when filter implementation fails
   """
   @callback should_include?(item :: FeedItem.t(), prompt :: String.t()) ::
