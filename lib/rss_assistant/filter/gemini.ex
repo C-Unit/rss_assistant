@@ -24,6 +24,10 @@ defmodule RssAssistant.Filter.Gemini do
       {:ok, {should_include, reasoning}} when is_boolean(should_include) ->
         {:ok, {should_include, reasoning}}
 
+      {:error, {:api_error, {:rate_limit, retry_after_seconds}}} ->
+        Logger.info("Gemini API rate limited, retry after #{retry_after_seconds} seconds")
+        {:retry, retry_after_seconds}
+
       {:error, reason} ->
         Logger.warning("Gemini filter failed: #{inspect(reason)}, including item by default")
         # Return error reason to higher level
@@ -110,12 +114,37 @@ defmodule RssAssistant.Filter.Gemini do
   end
 
   defp safe_gemini_call(prompt, generation_config) do
-    Gemini.Generate.text(prompt, generation_config: generation_config, model: @model)
+    case Gemini.Generate.text(prompt, generation_config: generation_config, model: @model) do
+      {:ok, result} -> {:ok, result}
+      {:error, rate_limited = %Gemini.Error{api_reason: 429}} ->
+        {:error, extract_rate_limit_info(rate_limited)}
+      {:error, error} ->
+        {:error, {:request_failed, error}}
+    end
   rescue
     error -> {:error, {:request_failed, error}}
   catch
     :exit, reason -> {:error, {:request_timeout, reason}}
   end
+
+  defp extract_rate_limit_info(%Gemini.Error{api_reason: 429, message: %{"details" => details}}) do
+    retry_delay = get_retry_delay(%{"details" => details})
+    {:rate_limit, retry_delay}
+  end
+
+  defp extract_rate_limit_info(_fallback), do: 60
+
+  defp get_retry_delay(%{"details" => details}) when is_list(details) do
+    Enum.find_value(details, 60, fn
+      %{"@type" => "type.googleapis.com/google.rpc.RetryInfo", "retryDelay" => retry_delay} ->
+        retry_delay
+        |> String.replace("s", "")
+        |> String.to_integer()
+      _ -> nil
+    end)
+  end
+
+  defp get_retry_delay(_), do: 60
 
   defp parse_json_response(json_string) when is_binary(json_string) do
     Logger.debug("Parsing JSON response: #{inspect(json_string)}")
