@@ -76,22 +76,43 @@ defmodule RssAssistant.FeedFilter do
        ) do
     case get_cached_decision(item_id, filtered_feed_id) do
       nil ->
-        with {:ok, {should_include, reasoning}} <- filter_impl.should_include?(item, prompt),
-             changeset <-
-               FeedItemDecision.changeset(%FeedItemDecision{}, %{
-                 item_id: item.generated_id,
-                 should_include: should_include,
-                 reasoning: reasoning,
-                 title: item.title,
-                 description: item.description,
-                 filtered_feed_id: filtered_feed_id
-               }),
-             {:ok, decision} <- Repo.insert(changeset) do
-          decision
+        case make_decision_with_retry(item, prompt, filter_impl) do
+          {:ok, {should_include, reasoning}} ->
+            changeset =
+              FeedItemDecision.changeset(%FeedItemDecision{}, %{
+                item_id: item.generated_id,
+                should_include: should_include,
+                reasoning: reasoning,
+                title: item.title,
+                description: item.description,
+                filtered_feed_id: filtered_feed_id
+              })
+            
+            case Repo.insert(changeset) do
+              {:ok, decision} -> decision
+              _ -> nil
+            end
+          
+          _ -> nil
         end
 
       cached_decision ->
         cached_decision
+    end
+  end
+
+  defp make_decision_with_retry(item, prompt, filter_impl) do
+    case filter_impl.should_include?(item, prompt) do
+      {:ok, {should_include, reasoning}} ->
+        {:ok, {should_include, reasoning}}
+      
+      {:retry, retry_after_ms} ->
+        # Sleep for the specific retry delay and try again
+        Process.sleep(retry_after_ms)
+        filter_impl.should_include?(item, prompt)
+      
+      {:error, _reason} ->
+        {:error, :filter_failed}
     end
   end
 

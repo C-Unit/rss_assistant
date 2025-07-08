@@ -163,4 +163,103 @@ defmodule RssAssistant.FeedFilterTest do
       assert filtered_xml =~ "xmlns=\"http://www.w3.org/2005/Atom\""
     end
   end
+
+  describe "retry functionality" do
+    test "retries when filter returns {:retry, delay}", %{filtered_feed_id: filtered_feed_id} do
+      rss_xml = """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <rss version="2.0">
+        <channel>
+          <title>Test Feed</title>
+          <description>A test feed</description>
+          <item>
+            <title>Test Item</title>
+            <description>Test description</description>
+            <link>https://example.com/test</link>
+            <guid>test-1</guid>
+          </item>
+        </channel>
+      </rss>
+      """
+
+      # First call returns retry, second call returns success
+      ref = make_ref()
+      expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ ->
+        case Process.get(ref, {1, nil}) do
+          {1, _} ->
+            start_time = System.monotonic_time(:millisecond)
+            Process.put(ref, {2, start_time})
+            {:retry, 100}  # 100ms delay
+          {2, start_time} ->
+            current_time = System.monotonic_time(:millisecond)
+            assert current_time - start_time >= 100, "Second call should be at least 100ms later"
+            {:ok, {true, "Included after retry"}}
+        end
+      end)
+
+      assert {:ok, filtered_xml} = FeedFilter.filter_feed(rss_xml, "test", filtered_feed_id)
+      assert filtered_xml =~ "Test Item"
+    end
+
+    test "handles failed retry gracefully", %{filtered_feed_id: filtered_feed_id} do
+      rss_xml = """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <rss version="2.0">
+        <channel>
+          <title>Test Feed</title>
+          <description>A test feed</description>
+          <item>
+            <title>Test Item</title>
+            <description>Test description</description>
+            <link>https://example.com/test</link>
+            <guid>test-1</guid>
+          </item>
+        </channel>
+      </rss>
+      """
+
+      # First call returns retry, second call returns error
+      ref = make_ref()
+      expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ ->
+        case Process.get(ref, {1, nil}) do
+          {1, _} ->
+            Process.put(ref, {2, nil})
+            {:retry, 100}
+          {2, _} ->
+            {:error, :api_failed}
+        end
+      end)
+
+      # Should still return filtered XML (item included by default when filter fails)
+      assert {:ok, filtered_xml} = FeedFilter.filter_feed(rss_xml, "test", filtered_feed_id)
+      assert filtered_xml =~ "Test Item"
+    end
+
+    test "only retries once", %{filtered_feed_id: filtered_feed_id} do
+      rss_xml = """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <rss version="2.0">
+        <channel>
+          <title>Test Feed</title>
+          <description>A test feed</description>
+          <item>
+            <title>Test Item</title>
+            <description>Test description</description>
+            <link>https://example.com/test</link>
+            <guid>test-1</guid>
+          </item>
+        </channel>
+      </rss>
+      """
+
+      # Both calls return retry - should only retry once
+      expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ ->
+        {:retry, 100}
+      end)
+
+      # Should still return filtered XML (item included by default when retry fails)
+      assert {:ok, filtered_xml} = FeedFilter.filter_feed(rss_xml, "test", filtered_feed_id)
+      assert filtered_xml =~ "Test Item"
+    end
+  end
 end
