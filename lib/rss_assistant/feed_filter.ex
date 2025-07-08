@@ -187,10 +187,7 @@ defmodule RssAssistant.FeedFilter do
 
   # Build RSS XML structure
   defp build_rss_xml(channel_info, items) do
-    items_xml =
-      items
-      |> Enum.map(&build_rss_item_xml/1)
-      |> Enum.join("\n")
+    items_xml = Enum.map_join(items, "\n", &build_rss_item_xml/1)
 
     """
     <?xml version="1.0" encoding="UTF-8"?>
@@ -212,9 +209,7 @@ defmodule RssAssistant.FeedFilter do
   # Build Atom XML structure
   defp build_atom_xml(feed_info, items) do
     entries_xml =
-      items
-      |> Enum.map(&build_atom_entry_xml/1)
-      |> Enum.join("\n")
+      Enum.map_join(items, "\n", &build_atom_entry_xml/1)
 
     """
     <?xml version="1.0" encoding="UTF-8"?>
@@ -232,9 +227,7 @@ defmodule RssAssistant.FeedFilter do
   # Build individual RSS item XML
   defp build_rss_item_xml(%FeedItem{} = item) do
     categories_xml =
-      item.categories
-      |> Enum.map(fn cat -> "<category>#{escape_xml(cat)}</category>" end)
-      |> Enum.join("\n")
+      Enum.map_join(item.categories, "\n", fn cat -> "<category>#{escape_xml(cat)}</category>" end)
 
     """
         <item>

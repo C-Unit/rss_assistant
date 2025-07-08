@@ -177,7 +177,7 @@ defmodule RssAssistant.FeedFilterCachingTest do
 
       # No decisions should be stored in database
       decisions = Repo.all(FeedItemDecision)
-      assert length(decisions) == 0
+      assert Enum.empty?(decisions)
     end
 
     test "decisions are cached separately per filtered_feed_id", %{
@@ -302,7 +302,7 @@ defmodule RssAssistant.FeedFilterCachingTest do
 
       # No decisions should be cached when errors occur
       decisions = Repo.all(FeedItemDecision)
-      assert length(decisions) == 0
+      assert Enum.empty?(decisions)
     end
 
     test "fallback decisions are not cached", %{
@@ -326,7 +326,7 @@ defmodule RssAssistant.FeedFilterCachingTest do
 
       # No decisions should be cached
       decisions = Repo.all(FeedItemDecision)
-      assert length(decisions) == 0
+      assert Enum.empty?(decisions)
 
       # Second call - should call filter again since nothing was cached
       {:ok, filtered_xml2} = FeedFilter.filter_feed(rss_content, prompt, filtered_feed.id)
@@ -338,7 +338,7 @@ defmodule RssAssistant.FeedFilterCachingTest do
 
       # Still no cached decisions
       decisions = Repo.all(FeedItemDecision)
-      assert length(decisions) == 0
+      assert Enum.empty?(decisions)
     end
 
     test "database storage errors don't prevent filtering", %{

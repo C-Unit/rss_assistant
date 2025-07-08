@@ -1,4 +1,7 @@
 defmodule RssAssistant.Accounts.UserToken do
+  @moduledoc """
+  User token schema for authentication and authorization.
+  """
   use Ecto.Schema
   import Ecto.Query
   alias RssAssistant.Accounts.UserToken
