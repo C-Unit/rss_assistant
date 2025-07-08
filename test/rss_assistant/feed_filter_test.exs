@@ -234,5 +234,32 @@ defmodule RssAssistant.FeedFilterTest do
       assert {:ok, filtered_xml} = FeedFilter.filter_feed(rss_xml, "test", filtered_feed_id)
       assert filtered_xml =~ "Test Item"
     end
+
+    test "only retries once", %{filtered_feed_id: filtered_feed_id} do
+      rss_xml = """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <rss version="2.0">
+        <channel>
+          <title>Test Feed</title>
+          <description>A test feed</description>
+          <item>
+            <title>Test Item</title>
+            <description>Test description</description>
+            <link>https://example.com/test</link>
+            <guid>test-1</guid>
+          </item>
+        </channel>
+      </rss>
+      """
+
+      # Both calls return retry - should only retry once
+      expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ ->
+        {:retry, 100}
+      end)
+
+      # Should still return filtered XML (item included by default when retry fails)
+      assert {:ok, filtered_xml} = FeedFilter.filter_feed(rss_xml, "test", filtered_feed_id)
+      assert filtered_xml =~ "Test Item"
+    end
   end
 end
