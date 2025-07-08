@@ -115,9 +115,12 @@ defmodule RssAssistant.Filter.Gemini do
 
   defp safe_gemini_call(prompt, generation_config) do
     case Gemini.Generate.text(prompt, generation_config: generation_config, model: @model) do
-      {:ok, result} -> {:ok, result}
+      {:ok, result} ->
+        {:ok, result}
+
       {:error, rate_limited = %Gemini.Error{api_reason: 429}} ->
         {:error, extract_rate_limit_info(rate_limited)}
+
       {:error, error} ->
         {:error, {:request_failed, error}}
     end
@@ -140,7 +143,9 @@ defmodule RssAssistant.Filter.Gemini do
         retry_delay
         |> String.replace("s", "")
         |> String.to_integer()
-      _ -> nil
+
+      _ ->
+        nil
     end)
   end
 

@@ -87,13 +87,14 @@ defmodule RssAssistant.FeedFilter do
                 description: item.description,
                 filtered_feed_id: filtered_feed_id
               })
-            
+
             case Repo.insert(changeset) do
               {:ok, decision} -> decision
               _ -> nil
             end
-          
-          _ -> nil
+
+          _ ->
+            nil
         end
 
       cached_decision ->
@@ -105,12 +106,12 @@ defmodule RssAssistant.FeedFilter do
     case filter_impl.should_include?(item, prompt) do
       {:ok, {should_include, reasoning}} ->
         {:ok, {should_include, reasoning}}
-      
+
       {:retry, retry_after_ms} ->
         # Sleep for the specific retry delay and try again
         Process.sleep(retry_after_ms)
         filter_impl.should_include?(item, prompt)
-      
+
       {:error, _reason} ->
         {:error, :filter_failed}
     end

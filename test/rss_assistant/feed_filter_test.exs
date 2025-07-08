@@ -184,12 +184,15 @@ defmodule RssAssistant.FeedFilterTest do
 
       # First call returns retry, second call returns success
       ref = make_ref()
+
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ ->
         case Process.get(ref, {1, nil}) do
           {1, _} ->
             start_time = System.monotonic_time(:millisecond)
             Process.put(ref, {2, start_time})
-            {:retry, 100}  # 100ms delay
+            # 100ms delay
+            {:retry, 100}
+
           {2, start_time} ->
             current_time = System.monotonic_time(:millisecond)
             assert current_time - start_time >= 100, "Second call should be at least 100ms later"
@@ -220,11 +223,13 @@ defmodule RssAssistant.FeedFilterTest do
 
       # First call returns retry, second call returns error
       ref = make_ref()
+
       expect(RssAssistant.Filter.Mock, :should_include?, 2, fn _, _ ->
         case Process.get(ref, {1, nil}) do
           {1, _} ->
             Process.put(ref, {2, nil})
             {:retry, 100}
+
           {2, _} ->
             {:error, :api_failed}
         end
