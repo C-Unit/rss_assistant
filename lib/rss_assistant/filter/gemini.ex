@@ -106,9 +106,11 @@ defmodule RssAssistant.Filter.Gemini do
     case safe_gemini_call(prompt, generation_config) do
       {:ok, json_string} when is_binary(json_string) ->
         {:ok, json_string}
-      {:error, reason} -> 
+
+      {:error, reason} ->
         {:error, {:api_error, reason}}
-      other -> 
+
+      other ->
         {:error, {:unexpected_response, other}}
     end
   end

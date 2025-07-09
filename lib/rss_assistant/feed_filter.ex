@@ -76,15 +76,17 @@ defmodule RssAssistant.FeedFilter do
        ) do
     case get_cached_decision(item_id, filtered_feed_id) do
       nil ->
-        with {:ok, {should_include, reasoning}} <- make_decision_with_retry(item, prompt, filter_impl),
-             changeset = FeedItemDecision.changeset(%FeedItemDecision{}, %{
-               item_id: item.generated_id,
-               should_include: should_include,
-               reasoning: reasoning,
-               title: item.title,
-               description: item.description,
-               filtered_feed_id: filtered_feed_id
-             }),
+        with {:ok, {should_include, reasoning}} <-
+               make_decision_with_retry(item, prompt, filter_impl),
+             changeset =
+               FeedItemDecision.changeset(%FeedItemDecision{}, %{
+                 item_id: item.generated_id,
+                 should_include: should_include,
+                 reasoning: reasoning,
+                 title: item.title,
+                 description: item.description,
+                 filtered_feed_id: filtered_feed_id
+               }),
              {:ok, decision} <- Repo.insert(changeset) do
           decision
         else
