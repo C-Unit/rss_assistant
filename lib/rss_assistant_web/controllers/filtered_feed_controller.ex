@@ -8,6 +8,7 @@ defmodule RssAssistantWeb.FilteredFeedController do
   alias RssAssistant.Accounts
   import Ecto.Query
 
+  # credo:disable-for-next-line
   # TODO: reduce duplication between new and create
   def new(conn, _params) do
     user = conn.assigns.current_user
@@ -59,6 +60,7 @@ defmodule RssAssistantWeb.FilteredFeedController do
 
   def show(conn, %{"slug" => slug}) do
     user = conn.assigns.current_user
+    # credo:disable-for-next-line
     # TODO: Create a separate function outside of the controller that uses a query to control
     # filtering to a user's feeds, then we find the slug inside of that. Add it to Accounts
     # where we already have a similar query we can use
@@ -75,6 +77,7 @@ defmodule RssAssistantWeb.FilteredFeedController do
 
   def update(conn, %{"slug" => slug, "filtered_feed" => filtered_feed_params}) do
     user = conn.assigns.current_user
+    # credo:disable-for-next-line
     # TODO: Ditto above
     filtered_feed = Repo.get_by!(FilteredFeed, slug: slug, user_id: user.id)
     changeset = FilteredFeed.changeset(filtered_feed, filtered_feed_params)

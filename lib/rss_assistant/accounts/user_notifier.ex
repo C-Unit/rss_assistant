@@ -1,4 +1,7 @@
 defmodule RssAssistant.Accounts.UserNotifier do
+  @moduledoc """
+  User notification helpers for sending emails.
+  """
   import Swoosh.Email
 
   alias RssAssistant.Mailer

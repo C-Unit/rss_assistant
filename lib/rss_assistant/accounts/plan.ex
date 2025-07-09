@@ -1,4 +1,7 @@
 defmodule RssAssistant.Accounts.Plan do
+  @moduledoc """
+  Plan schema for subscription plans.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 
