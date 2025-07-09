@@ -76,25 +76,21 @@ defmodule RssAssistant.FeedFilter do
        ) do
     case get_cached_decision(item_id, filtered_feed_id) do
       nil ->
-        case make_decision_with_retry(item, prompt, filter_impl) do
-          {:ok, {should_include, reasoning}} ->
-            changeset =
-              FeedItemDecision.changeset(%FeedItemDecision{}, %{
-                item_id: item.generated_id,
-                should_include: should_include,
-                reasoning: reasoning,
-                title: item.title,
-                description: item.description,
-                filtered_feed_id: filtered_feed_id
-              })
-
-            case Repo.insert(changeset) do
-              {:ok, decision} -> decision
-              _ -> nil
-            end
-
-          _ ->
-            nil
+        with {:ok, {should_include, reasoning}} <-
+               make_decision_with_retry(item, prompt, filter_impl),
+             changeset =
+               FeedItemDecision.changeset(%FeedItemDecision{}, %{
+                 item_id: item.generated_id,
+                 should_include: should_include,
+                 reasoning: reasoning,
+                 title: item.title,
+                 description: item.description,
+                 filtered_feed_id: filtered_feed_id
+               }),
+             {:ok, decision} <- Repo.insert(changeset) do
+          decision
+        else
+          _ -> nil
         end
 
       cached_decision ->
@@ -187,10 +183,7 @@ defmodule RssAssistant.FeedFilter do
 
   # Build RSS XML structure
   defp build_rss_xml(channel_info, items) do
-    items_xml =
-      items
-      |> Enum.map(&build_rss_item_xml/1)
-      |> Enum.join("\n")
+    items_xml = Enum.map_join(items, "\n", &build_rss_item_xml/1)
 
     """
     <?xml version="1.0" encoding="UTF-8"?>
@@ -212,9 +205,7 @@ defmodule RssAssistant.FeedFilter do
   # Build Atom XML structure
   defp build_atom_xml(feed_info, items) do
     entries_xml =
-      items
-      |> Enum.map(&build_atom_entry_xml/1)
-      |> Enum.join("\n")
+      Enum.map_join(items, "\n", &build_atom_entry_xml/1)
 
     """
     <?xml version="1.0" encoding="UTF-8"?>
@@ -232,9 +223,7 @@ defmodule RssAssistant.FeedFilter do
   # Build individual RSS item XML
   defp build_rss_item_xml(%FeedItem{} = item) do
     categories_xml =
-      item.categories
-      |> Enum.map(fn cat -> "<category>#{escape_xml(cat)}</category>" end)
-      |> Enum.join("\n")
+      Enum.map_join(item.categories, "\n", fn cat -> "<category>#{escape_xml(cat)}</category>" end)
 
     """
         <item>

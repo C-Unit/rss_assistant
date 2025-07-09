@@ -40,9 +40,8 @@ defmodule RssAssistant.Filter.Gemini do
     user_prompt = build_user_prompt(item, prompt)
     full_prompt = "#{system_prompt}\n\n#{user_prompt}"
 
-    with {:ok, json_string} <- make_gemini_request(full_prompt),
-         {:ok, {should_include, reasoning}} <- parse_json_response(json_string) do
-      {:ok, {should_include, reasoning}}
+    with {:ok, json_string} <- make_gemini_request(full_prompt) do
+      parse_json_response(json_string)
     end
   end
 
@@ -104,12 +103,15 @@ defmodule RssAssistant.Filter.Gemini do
     }
 
     # Use the Gemini client to generate structured content - handle exceptions
-    with {:ok, json_string} when is_binary(json_string) <-
-           safe_gemini_call(prompt, generation_config) do
-      {:ok, json_string}
-    else
-      {:error, reason} -> {:error, {:api_error, reason}}
-      other -> {:error, {:unexpected_response, other}}
+    case safe_gemini_call(prompt, generation_config) do
+      {:ok, json_string} when is_binary(json_string) ->
+        {:ok, json_string}
+
+      {:error, reason} ->
+        {:error, {:api_error, reason}}
+
+      other ->
+        {:error, {:unexpected_response, other}}
     end
   end
 

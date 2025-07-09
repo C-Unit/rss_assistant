@@ -1,4 +1,7 @@
 defmodule RssAssistantWeb.UserAuth do
+  @moduledoc """
+  User authentication and authorization helpers.
+  """
   use RssAssistantWeb, :verified_routes
 
   import Plug.Conn

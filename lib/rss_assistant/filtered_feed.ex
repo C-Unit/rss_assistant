@@ -1,4 +1,7 @@
 defmodule RssAssistant.FilteredFeed do
+  @moduledoc """
+  Filtered feed schema for storing RSS feed filtering configurations.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

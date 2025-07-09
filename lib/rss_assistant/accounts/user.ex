@@ -1,4 +1,7 @@
 defmodule RssAssistant.Accounts.User do
+  @moduledoc """
+  User schema for the user context.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 
