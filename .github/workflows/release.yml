@@ -49,6 +49,9 @@ jobs:
     - name: Check formatting
       run: mix format --check-formatted
 
+    - name: Run Credo
+      run: mix credo
+
     - name: Set up database
       run: mix ecto.setup
       env:
