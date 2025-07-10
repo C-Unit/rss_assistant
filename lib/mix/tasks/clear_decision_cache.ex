@@ -10,8 +10,8 @@ defmodule Mix.Tasks.ClearDecisionCache do
   """
   use Mix.Task
 
-  alias RssAssistant.Repo
   alias RssAssistant.FeedItemDecision
+  alias RssAssistant.Repo
 
   @requirements ["app.start"]
   @shortdoc "Clear the decision cache"

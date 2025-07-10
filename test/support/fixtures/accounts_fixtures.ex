@@ -4,6 +4,8 @@ defmodule RssAssistant.AccountsFixtures do
   entities via the `RssAssistant.Accounts` context.
   """
 
+  alias RssAssistant.Accounts.Plan
+
   def unique_user_email, do: "user#{System.unique_integer()}@example.com"
   def valid_user_password, do: "hello world!"
 
@@ -16,7 +18,7 @@ defmodule RssAssistant.AccountsFixtures do
 
   def user_fixture(attrs \\ %{}) do
     # Ensure Free plan exists for registration
-    unless RssAssistant.Repo.get_by(RssAssistant.Accounts.Plan, name: "Free") do
+    unless RssAssistant.Repo.get_by(Plan, name: "Free") do
       free_plan_fixture()
     end
 
@@ -43,8 +45,8 @@ defmodule RssAssistant.AccountsFixtures do
   end
 
   def plan_fixture(attrs \\ %{}) do
-    %RssAssistant.Accounts.Plan{}
-    |> RssAssistant.Accounts.Plan.changeset(valid_plan_attributes(attrs))
+    %Plan{}
+    |> Plan.changeset(valid_plan_attributes(attrs))
     |> RssAssistant.Repo.insert!()
   end
 

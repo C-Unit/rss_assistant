@@ -51,24 +51,22 @@ defmodule RssAssistant.FeedParser do
   @spec detect_feed_type(String.t()) ::
           {:rss, term()} | {:atom, term()} | {:error, :invalid_xml | :unknown_format}
   def detect_feed_type(xml_string) when is_binary(xml_string) do
-    try do
-      parsed_xml = parse(xml_string)
+    parsed_xml = parse(xml_string)
 
-      cond do
-        xpath(parsed_xml, ~x"//rss") ->
-          {:rss, parsed_xml}
+    cond do
+      xpath(parsed_xml, ~x"//rss") ->
+        {:rss, parsed_xml}
 
-        xpath(parsed_xml, ~x"//feed") ->
-          {:atom, parsed_xml}
+      xpath(parsed_xml, ~x"//feed") ->
+        {:atom, parsed_xml}
 
-        true ->
-          {:error, :unknown_format}
-      end
-    rescue
-      _error -> {:error, :invalid_xml}
-    catch
-      :exit, _reason -> {:error, :invalid_xml}
+      true ->
+        {:error, :unknown_format}
     end
+  rescue
+    _error -> {:error, :invalid_xml}
+  catch
+    :exit, _reason -> {:error, :invalid_xml}
   end
 
   # Parse RSS 2.0 format items
