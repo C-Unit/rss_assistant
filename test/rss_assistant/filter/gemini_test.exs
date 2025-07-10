@@ -2,8 +2,8 @@ defmodule RssAssistant.Filter.GeminiTest do
   use ExUnit.Case, async: true
   import ExUnit.CaptureLog
 
-  alias RssAssistant.Filter.Gemini
   alias RssAssistant.FeedItem
+  alias RssAssistant.Filter.Gemini
 
   describe "should_include?/2" do
     test "returns true when Gemini API is not configured (fallback behavior)" do
@@ -105,7 +105,7 @@ defmodule RssAssistant.Filter.GeminiTest do
           assert is_boolean(should_include)
           assert is_binary(reasoning)
 
-          # For sports content with "filter out sports" prompt, 
+          # For sports content with "filter out sports" prompt,
           # we expect it might be filtered out (false), but due to API variability
           # we just test that we get a valid response
       end

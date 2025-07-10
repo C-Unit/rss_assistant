@@ -1,11 +1,11 @@
 defmodule RssAssistantWeb.FilteredFeedController do
   use RssAssistantWeb, :controller
 
-  alias RssAssistant.FilteredFeed
-  alias RssAssistant.Repo
+  alias RssAssistant.Accounts
   alias RssAssistant.FeedFilter
   alias RssAssistant.FeedItemDecision
-  alias RssAssistant.Accounts
+  alias RssAssistant.FilteredFeed
+  alias RssAssistant.Repo
   import Ecto.Query
 
   # credo:disable-for-next-line

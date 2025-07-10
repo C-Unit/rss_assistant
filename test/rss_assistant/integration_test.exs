@@ -4,7 +4,7 @@ defmodule RssAssistant.IntegrationTest do
   import Mox
   import RssAssistant.AccountsFixtures
 
-  alias RssAssistant.{FeedParser, FeedFilter, FeedItem, FilteredFeed, Repo}
+  alias RssAssistant.{FeedFilter, FeedItem, FeedParser, FilteredFeed, Repo}
 
   # Make sure mocks are verified when the test exits
   setup :verify_on_exit!

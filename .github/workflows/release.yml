@@ -50,7 +50,7 @@ jobs:
       run: mix format --check-formatted
 
     - name: Run Credo
-      run: mix credo
+      run: mix credo --strict
 
     - name: Set up database
       run: mix ecto.setup

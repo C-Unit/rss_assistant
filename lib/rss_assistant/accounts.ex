@@ -6,7 +6,7 @@ defmodule RssAssistant.Accounts do
   import Ecto.Query, warn: false
   alias RssAssistant.Repo
 
-  alias RssAssistant.Accounts.{User, UserToken, UserNotifier, Plan}
+  alias RssAssistant.Accounts.{Plan, User, UserNotifier, UserToken}
 
   ## Database getters
 

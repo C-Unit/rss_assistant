@@ -2,7 +2,7 @@ defmodule RssAssistant.FeedParserTest do
   use ExUnit.Case, async: true
   import ExUnit.CaptureLog
 
-  alias RssAssistant.{FeedParser, FeedItem}
+  alias RssAssistant.{FeedItem, FeedParser}
 
   describe "parse_feed/1" do
     test "parses RSS 2.0 feed successfully" do

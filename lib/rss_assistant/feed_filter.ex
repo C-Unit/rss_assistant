@@ -8,7 +8,7 @@ defmodule RssAssistant.FeedFilter do
 
   import SweetXml
   import Ecto.Query
-  alias RssAssistant.{FeedParser, FeedItem, FeedItemDecision, Repo}
+  alias RssAssistant.{FeedItem, FeedItemDecision, FeedParser, Repo}
 
   @doc """
   Filters an RSS feed based on a user prompt.
@@ -125,20 +125,18 @@ defmodule RssAssistant.FeedFilter do
 
   # Rebuild the RSS/Atom feed with only the filtered items
   defp rebuild_feed(original_xml, filtered_items) do
-    try do
-      parsed_xml = parse(original_xml)
+    parsed_xml = parse(original_xml)
 
-      # Determine if this is RSS or Atom format
-      if xpath(parsed_xml, ~x"//rss") do
-        rebuild_rss_feed(parsed_xml, filtered_items)
-      else
-        rebuild_atom_feed(parsed_xml, filtered_items)
-      end
-    rescue
-      _error -> {:error, :rebuild_failed}
-    catch
-      :exit, _reason -> {:error, :rebuild_failed}
+    # Determine if this is RSS or Atom format
+    if xpath(parsed_xml, ~x"//rss") do
+      rebuild_rss_feed(parsed_xml, filtered_items)
+    else
+      rebuild_atom_feed(parsed_xml, filtered_items)
     end
+  rescue
+    _error -> {:error, :rebuild_failed}
+  catch
+    :exit, _reason -> {:error, :rebuild_failed}
   end
 
   # Rebuild RSS 2.0 format feed
