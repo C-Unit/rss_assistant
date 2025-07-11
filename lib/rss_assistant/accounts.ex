@@ -410,12 +410,18 @@ defmodule RssAssistant.Accounts do
 
   @doc """
   Checks if a user can create more filtered feeds based on their plan.
+  Returns a map with the result and plan information.
   """
   def can_create_feed?(%User{} = user) do
     plan = get_user_plan(user)
     current_count = get_user_feed_count(user)
+    can_create = plan.max_feeds > 0 && current_count < plan.max_feeds
 
-    plan.max_feeds > 0 && current_count < plan.max_feeds
+    %{
+      can_create: can_create,
+      plan: plan,
+      current_count: current_count
+    }
   end
 
   @doc """
@@ -451,5 +457,25 @@ defmodule RssAssistant.Accounts do
       order_by: [desc: f.inserted_at]
     )
     |> Repo.all()
+  end
+
+  @doc """
+  Gets a user's filtered feed by slug.
+
+  ## Examples
+
+      iex> get_user_filtered_feed_by_slug(user, "my-feed")
+      %FilteredFeed{}
+
+      iex> get_user_filtered_feed_by_slug(user, "nonexistent")
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_user_filtered_feed_by_slug(%User{id: user_id}, slug) do
+    get_user_filtered_feed_by_slug(user_id, slug)
+  end
+
+  def get_user_filtered_feed_by_slug(user_id, slug) when is_integer(user_id) do
+    Repo.get_by!(RssAssistant.FilteredFeed, slug: slug, user_id: user_id)
   end
 end

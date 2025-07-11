@@ -8,31 +8,25 @@ defmodule RssAssistantWeb.FilteredFeedController do
   alias RssAssistant.Repo
   import Ecto.Query
 
-  # credo:disable-for-next-line
-  # TODO: reduce duplication between new and create
   def new(conn, _params) do
     user = conn.assigns.current_user
+    feed_status = Accounts.can_create_feed?(user)
 
-    if Accounts.can_create_feed?(user) do
+    if feed_status.can_create do
       changeset = FilteredFeed.changeset(%FilteredFeed{}, %{})
       render(conn, :new, changeset: changeset)
     else
-      plan = Accounts.get_user_plan(user)
-      current_count = Accounts.get_user_feed_count(user)
-
       conn
-      |> put_flash(
-        :error,
-        "You have reached your plan limit of #{plan.max_feeds} filtered feeds. You currently have #{current_count} feeds."
-      )
+      |> put_flash(:error, plan_limit_error_message(feed_status))
       |> redirect(to: ~p"/")
     end
   end
 
   def create(conn, %{"filtered_feed" => filtered_feed_params}) do
     user = conn.assigns.current_user
+    feed_status = Accounts.can_create_feed?(user)
 
-    if Accounts.can_create_feed?(user) do
+    if feed_status.can_create do
       filtered_feed_params = Map.put(filtered_feed_params, "user_id", user.id)
       changeset = FilteredFeed.changeset(%FilteredFeed{}, filtered_feed_params)
 
@@ -46,25 +40,15 @@ defmodule RssAssistantWeb.FilteredFeedController do
           render(conn, :new, changeset: changeset)
       end
     else
-      plan = Accounts.get_user_plan(user)
-      current_count = Accounts.get_user_feed_count(user)
-
       conn
-      |> put_flash(
-        :error,
-        "You have reached your plan limit of #{plan.max_feeds} filtered feeds. You currently have #{current_count} feeds."
-      )
+      |> put_flash(:error, plan_limit_error_message(feed_status))
       |> redirect(to: ~p"/")
     end
   end
 
   def show(conn, %{"slug" => slug}) do
     user = conn.assigns.current_user
-    # credo:disable-for-next-line
-    # TODO: Create a separate function outside of the controller that uses a query to control
-    # filtering to a user's feeds, then we find the slug inside of that. Add it to Accounts
-    # where we already have a similar query we can use
-    filtered_feed = Repo.get_by!(FilteredFeed, slug: slug, user_id: user.id)
+    filtered_feed = Accounts.get_user_filtered_feed_by_slug(user, slug)
     changeset = FilteredFeed.changeset(filtered_feed, %{})
     filtered_items = get_filtered_items(filtered_feed.id)
 
@@ -77,9 +61,7 @@ defmodule RssAssistantWeb.FilteredFeedController do
 
   def update(conn, %{"slug" => slug, "filtered_feed" => filtered_feed_params}) do
     user = conn.assigns.current_user
-    # credo:disable-for-next-line
-    # TODO: Ditto above
-    filtered_feed = Repo.get_by!(FilteredFeed, slug: slug, user_id: user.id)
+    filtered_feed = Accounts.get_user_filtered_feed_by_slug(user, slug)
     changeset = FilteredFeed.changeset(filtered_feed, filtered_feed_params)
 
     case Repo.update(changeset) do
@@ -163,5 +145,9 @@ defmodule RssAssistantWeb.FilteredFeedController do
         select: d
 
     Repo.all(query)
+  end
+
+  defp plan_limit_error_message(feed_status) do
+    "You have reached your plan limit of #{feed_status.plan.max_feeds} filtered feeds. You currently have #{feed_status.current_count} feeds."
   end
 end
