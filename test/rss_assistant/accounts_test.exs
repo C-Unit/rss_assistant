@@ -573,14 +573,20 @@ defmodule RssAssistant.AccountsTest do
 
     test "can_create_feed?/1 returns false for free plan" do
       user = user_fixture()
-      refute Accounts.can_create_feed?(user)
+      feed_status = Accounts.can_create_feed?(user)
+      refute feed_status.can_create
+      assert feed_status.plan.name == "Free"
+      assert feed_status.current_count == 0
     end
 
     test "can_create_feed?/1 returns true for pro plan with no feeds", %{pro_plan: pro_plan} do
       user = user_fixture()
       {:ok, updated_user} = Accounts.change_user_plan(user, pro_plan.id)
       user = Repo.preload(updated_user, :plan, force: true)
-      assert Accounts.can_create_feed?(user)
+      feed_status = Accounts.can_create_feed?(user)
+      assert feed_status.can_create
+      assert feed_status.plan.name == "Pro"
+      assert feed_status.current_count == 0
     end
 
     test "can_create_feed?/1 returns false for pro plan at limit", %{pro_plan: pro_plan} do
@@ -593,7 +599,10 @@ defmodule RssAssistant.AccountsTest do
       end
 
       user = Repo.preload(updated_user, :plan, force: true)
-      refute Accounts.can_create_feed?(user)
+      feed_status = Accounts.can_create_feed?(user)
+      refute feed_status.can_create
+      assert feed_status.plan.name == "Pro"
+      assert feed_status.current_count == 100
     end
 
     test "get_user_feed_count/1 with user struct" do
@@ -678,6 +687,40 @@ defmodule RssAssistant.AccountsTest do
 
       assert "Free" in plan_names
       assert "Pro" in plan_names
+    end
+
+    test "get_user_filtered_feed_by_slug/2 with user struct" do
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: user.id})
+
+      fetched_feed = Accounts.get_user_filtered_feed_by_slug(user, feed.slug)
+      assert fetched_feed.id == feed.id
+    end
+
+    test "get_user_filtered_feed_by_slug/2 with user id" do
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: user.id})
+
+      fetched_feed = Accounts.get_user_filtered_feed_by_slug(user.id, feed.slug)
+      assert fetched_feed.id == feed.id
+    end
+
+    test "get_user_filtered_feed_by_slug/2 raises for nonexistent feed" do
+      user = user_fixture()
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Accounts.get_user_filtered_feed_by_slug(user, "nonexistent")
+      end
+    end
+
+    test "get_user_filtered_feed_by_slug/2 raises for other user's feed" do
+      user1 = user_fixture()
+      user2 = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: user1.id})
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Accounts.get_user_filtered_feed_by_slug(user2, feed.slug)
+      end
     end
   end
 end
