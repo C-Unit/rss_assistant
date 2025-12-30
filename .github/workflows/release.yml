@@ -69,15 +69,3 @@ jobs:
 
     - name: Build release with ERTS
       run: MIX_ENV=prod mix release
-
-    - name: Create tarball
-      run: |
-        cd _build/prod/rel
-        tar -czf ../../../rss_assistant-${{ github.sha }}.tar.gz rss_assistant
-
-    - name: Upload release artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: rss_assistant-release-${{ github.sha }}
-        path: rss_assistant-${{ github.sha }}.tar.gz
-        retention-days: 30
