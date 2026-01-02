@@ -16,7 +16,7 @@ defmodule RssAssistant.Filter.Gemini do
 
   alias RssAssistant.FeedItem
   require Logger
-  @model "gemini-2.5-flash-lite-preview-06-17"
+  @model "gemini-flash-latest"
 
   @impl RssAssistant.Filter
   def should_include?(%FeedItem{} = item, prompt) when is_binary(prompt) do
@@ -81,9 +81,10 @@ defmodule RssAssistant.Filter.Gemini do
 
   defp make_gemini_request(prompt) do
     # Configure structured JSON response with schema
-    generation_config = %Gemini.Types.GenerationConfig{
+    options = [
+      model: @model,
       response_mime_type: "application/json",
-      response_schema: %{
+      response_json_schema: %{
         "type" => "object",
         "properties" => %{
           "should_include" => %{
@@ -99,11 +100,13 @@ defmodule RssAssistant.Filter.Gemini do
       },
       # Low temperature for consistent responses
       temperature: 0.1,
-      max_output_tokens: 200
-    }
+      max_output_tokens: 200,
+      # Disable thinking for faster responses and lower costs (Gemini 2.5)
+      thinking_config: %Gemini.Types.GenerationConfig.ThinkingConfig{thinking_budget: 0}
+    ]
 
     # Use the Gemini client to generate structured content - handle exceptions
-    case safe_gemini_call(prompt, generation_config) do
+    case safe_gemini_call(prompt, options) do
       {:ok, json_string} when is_binary(json_string) ->
         {:ok, json_string}
 
@@ -115,10 +118,10 @@ defmodule RssAssistant.Filter.Gemini do
     end
   end
 
-  defp safe_gemini_call(prompt, generation_config) do
-    case Gemini.Generate.text(prompt, generation_config: generation_config, model: @model) do
-      {:ok, result} ->
-        {:ok, result}
+  defp safe_gemini_call(prompt, options) do
+    case Gemini.generate(prompt, options) do
+      {:ok, %Gemini.Types.Response.GenerateContentResponse{candidates: candidates}} ->
+        extract_text_from_response(candidates)
 
       {:error, rate_limited = %Gemini.Error{api_reason: 429}} ->
         {:error, extract_rate_limit_info(rate_limited)}
@@ -131,6 +134,18 @@ defmodule RssAssistant.Filter.Gemini do
   catch
     :exit, reason -> {:error, {:request_timeout, reason}}
   end
+
+  defp extract_text_from_response([%Gemini.Types.Response.Candidate{content: content} | _]) do
+    case content do
+      %Gemini.Types.Content{parts: [%Gemini.Types.Part{text: text} | _]} when is_binary(text) ->
+        {:ok, text}
+
+      _ ->
+        {:error, :no_text_in_response}
+    end
+  end
+
+  defp extract_text_from_response(_), do: {:error, :no_candidates}
 
   defp extract_rate_limit_info(%Gemini.Error{api_reason: 429, message: %{"details" => details}}) do
     retry_delay = get_retry_delay(%{"details" => details})
