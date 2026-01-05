@@ -12,7 +12,7 @@ config :rss_assistant,
   generators: [timestamp_type: :utc_datetime],
   # Available filter implementations:
   # - RssAssistant.Filter.AlwaysInclude (default, includes all items)
-  # - RssAssistant.Filter.Gemini (AI-powered filtering, requires GEMINI_API_KEY)
+  # - RssAssistant.Filter.OpenRouter (AI-powered filtering, requires OPENROUTER_API_KEY)
   filter_impl: RssAssistant.Filter.AlwaysInclude
 
 # Configures the endpoint

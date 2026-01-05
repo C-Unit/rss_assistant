@@ -63,6 +63,7 @@ jobs:
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rss_assistant_test
         PGPASSWORD: postgres
+        OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
     - name: Build assets
       run: MIX_ENV=prod mix assets.deploy
