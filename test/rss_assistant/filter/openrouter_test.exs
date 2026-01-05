@@ -1,15 +1,15 @@
-defmodule RssAssistant.Filter.GeminiTest do
+defmodule RssAssistant.Filter.OpenRouterTest do
   use ExUnit.Case, async: true
   import ExUnit.CaptureLog
 
   alias RssAssistant.FeedItem
-  alias RssAssistant.Filter.Gemini
+  alias RssAssistant.Filter.OpenRouter
 
   describe "should_include?/2" do
-    test "returns true when Gemini API is not configured (fallback behavior)" do
+    test "returns error when OpenRouter API is not configured" do
       # Clear any API key to test fallback behavior
-      original_api_key = Application.get_env(:gemini_ex, :api_key)
-      Application.put_env(:gemini_ex, :api_key, nil)
+      original_api_key = System.get_env("OPENROUTER_API_KEY")
+      System.delete_env("OPENROUTER_API_KEY")
 
       item = %FeedItem{
         generated_id: "test-article-123",
@@ -20,18 +20,18 @@ defmodule RssAssistant.Filter.GeminiTest do
 
       # Should return error when API is not configured
       capture_log(fn ->
-        result = Gemini.should_include?(item, "filter out sports content")
-        assert {:error, _reason} = result
+        result = OpenRouter.should_include?(item, "filter out sports content")
+        assert {:error, :no_api_key} = result
       end)
 
       # Restore original config
-      Application.put_env(:gemini_ex, :api_key, original_api_key)
+      if original_api_key, do: System.put_env("OPENROUTER_API_KEY", original_api_key)
     end
 
     test "handles empty feed item gracefully" do
       # Clear any API key to test fallback behavior
-      original_api_key = Application.get_env(:gemini_ex, :api_key)
-      Application.put_env(:gemini_ex, :api_key, nil)
+      original_api_key = System.get_env("OPENROUTER_API_KEY")
+      System.delete_env("OPENROUTER_API_KEY")
 
       item = %FeedItem{
         generated_id: "empty-item-456",
@@ -42,18 +42,18 @@ defmodule RssAssistant.Filter.GeminiTest do
 
       # Should return error with minimal data when API not configured
       capture_log(fn ->
-        result = Gemini.should_include?(item, "any filter")
-        assert {:error, _reason} = result
+        result = OpenRouter.should_include?(item, "any filter")
+        assert {:error, :no_api_key} = result
       end)
 
       # Restore original config
-      Application.put_env(:gemini_ex, :api_key, original_api_key)
+      if original_api_key, do: System.put_env("OPENROUTER_API_KEY", original_api_key)
     end
 
     test "handles various category formats" do
       # Clear any API key to test fallback behavior
-      original_api_key = Application.get_env(:gemini_ex, :api_key)
-      Application.put_env(:gemini_ex, :api_key, nil)
+      original_api_key = System.get_env("OPENROUTER_API_KEY")
+      System.delete_env("OPENROUTER_API_KEY")
 
       item_with_categories = %FeedItem{
         generated_id: "categories-item-789",
@@ -70,19 +70,19 @@ defmodule RssAssistant.Filter.GeminiTest do
       }
 
       capture_log(fn ->
-        result1 = Gemini.should_include?(item_with_categories, "filter tech")
-        assert {:error, _reason1} = result1
+        result1 = OpenRouter.should_include?(item_with_categories, "filter tech")
+        assert {:error, :no_api_key} = result1
 
-        result2 = Gemini.should_include?(item_without_categories, "filter tech")
-        assert {:error, _reason2} = result2
+        result2 = OpenRouter.should_include?(item_without_categories, "filter tech")
+        assert {:error, :no_api_key} = result2
       end)
 
       # Restore original config
-      Application.put_env(:gemini_ex, :api_key, original_api_key)
+      if original_api_key, do: System.put_env("OPENROUTER_API_KEY", original_api_key)
     end
 
-    @tag :gemini_api
-    test "works with real Gemini API when configured" do
+    @tag :openrouter_api
+    test "works with real OpenRouter API when configured" do
       item = %FeedItem{
         generated_id: "sports-championship-345",
         title: "Breaking: Local Sports Team Wins Championship",
@@ -91,7 +91,7 @@ defmodule RssAssistant.Filter.GeminiTest do
       }
 
       # Test filtering out sports content
-      result = Gemini.should_include?(item, "filter out all sports-related content")
+      result = OpenRouter.should_include?(item, "filter out all sports-related content")
 
       # Result should be a successful tuple with decision
       assert {:ok, {should_include, reasoning}} = result
@@ -103,7 +103,7 @@ defmodule RssAssistant.Filter.GeminiTest do
       # we just test that we get a valid response
     end
 
-    @tag :gemini_api
+    @tag :openrouter_api
     test "includes non-sports content when filtering sports" do
       item = %FeedItem{
         generated_id: "renewable-energy-678",
@@ -113,7 +113,7 @@ defmodule RssAssistant.Filter.GeminiTest do
       }
 
       # Test that non-sports content is included when filtering sports
-      result = Gemini.should_include?(item, "filter out all sports-related content")
+      result = OpenRouter.should_include?(item, "filter out all sports-related content")
 
       # Should likely be true for non-sports content, but we just verify valid decision
       assert {:ok, {should_include, reasoning}} = result
@@ -133,19 +133,18 @@ defmodule RssAssistant.Filter.GeminiTest do
         link: "https://example.com"
       }
 
-      # We can't easily test the private functions, but we can test the public interface
-      # and verify that it handles the data correctly through the fallback behavior
-      original_api_key = Application.get_env(:gemini_ex, :api_key)
-      Application.put_env(:gemini_ex, :api_key, nil)
+      # Clear API key to test error handling
+      original_api_key = System.get_env("OPENROUTER_API_KEY")
+      System.delete_env("OPENROUTER_API_KEY")
 
       capture_log(fn ->
         # Should handle the full item data without errors
-        result = Gemini.should_include?(item, "detailed filtering criteria")
-        assert {:error, _reason} = result
+        result = OpenRouter.should_include?(item, "detailed filtering criteria")
+        assert {:error, :no_api_key} = result
       end)
 
       # Restore original config
-      Application.put_env(:gemini_ex, :api_key, original_api_key)
+      if original_api_key, do: System.put_env("OPENROUTER_API_KEY", original_api_key)
     end
   end
 end

@@ -20,13 +20,10 @@ if System.get_env("PHX_SERVER") do
   config :rss_assistant, RssAssistantWeb.Endpoint, server: true
 end
 
-# Configure Gemini AI client
-if System.get_env("GEMINI_API_KEY") do
-  config :gemini_ex,
-    api_key: System.get_env("GEMINI_API_KEY")
-
+# Configure OpenRouter AI client
+if System.get_env("OPENROUTER_API_KEY") do
   config :rss_assistant,
-    filter_impl: RssAssistant.Filter.Gemini
+    filter_impl: RssAssistant.Filter.OpenRouter
 end
 
 if config_env() == :prod do
