@@ -14,6 +14,8 @@ defmodule RssAssistant.Filter.OpenRouter do
 
   @behaviour RssAssistant.Filter
 
+  alias OpenaiEx.Chat.Completions
+  alias OpenaiEx.ChatMessage
   alias RssAssistant.FeedItem
   require Logger
   @model "nvidia/nemotron-3-nano-30b-a3b:free"
@@ -92,11 +94,11 @@ defmodule RssAssistant.Filter.OpenRouter do
 
       # Create chat completion request with structured JSON output
       request =
-        OpenaiEx.Chat.Completions.new(
+        Completions.new(
           model: @model,
           messages: [
-            OpenaiEx.ChatMessage.system(system_prompt),
-            OpenaiEx.ChatMessage.user(user_prompt)
+            ChatMessage.system(system_prompt),
+            ChatMessage.user(user_prompt)
           ],
           response_format: %{
             type: "json_schema",
@@ -139,7 +141,7 @@ defmodule RssAssistant.Filter.OpenRouter do
   end
 
   defp safe_openrouter_call(client, request) do
-    case OpenaiEx.Chat.Completions.create(client, request) do
+    case Completions.create(client, request) do
       {:ok, %{"choices" => [%{"message" => %{"content" => content}} | _]}} ->
         {:ok, content}
 
