@@ -1,5 +1,5 @@
 defmodule RssAssistant.Filter.OpenRouterTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   import ExUnit.CaptureLog
 
   alias RssAssistant.FeedItem

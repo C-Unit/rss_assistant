@@ -21,7 +21,8 @@ if System.get_env("PHX_SERVER") do
 end
 
 # Configure OpenRouter AI client
-if System.get_env("OPENROUTER_API_KEY") do
+# Don't override in test environment to allow mocking
+if System.get_env("OPENROUTER_API_KEY") && config_env() != :test do
   config :rss_assistant,
     filter_impl: RssAssistant.Filter.OpenRouter
 end
