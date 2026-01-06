@@ -127,8 +127,8 @@ if config_env() == :prod do
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 
-  # Configure Postmark for production email delivery
+  # Configure SMTP2GO for production email delivery
   config :rss_assistant, RssAssistant.Mailer,
-    adapter: Swoosh.Adapters.Postmark,
-    api_key: System.get_env("POSTMARK_API_KEY")
+    adapter: Swoosh.Adapters.SMTP2GO,
+    api_key: System.get_env("SMTP2GO_API_KEY")
 end
