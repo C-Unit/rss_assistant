@@ -478,4 +478,26 @@ defmodule RssAssistant.Accounts do
   def get_user_filtered_feed_by_slug(user_id, slug) when is_integer(user_id) do
     Repo.get_by!(RssAssistant.FilteredFeed, slug: slug, user_id: user_id)
   end
+
+  @doc """
+  Deletes a user's filtered feed by slug.
+  Only the owner can delete their feed.
+
+  ## Examples
+
+      iex> delete_user_filtered_feed(user, "my-feed")
+      {:ok, %FilteredFeed{}}
+
+      iex> delete_user_filtered_feed(user, "nonexistent")
+      ** (Ecto.NoResultsError)
+
+  """
+  def delete_user_filtered_feed(%User{id: user_id}, slug) do
+    delete_user_filtered_feed(user_id, slug)
+  end
+
+  def delete_user_filtered_feed(user_id, slug) when is_integer(user_id) do
+    filtered_feed = Repo.get_by!(RssAssistant.FilteredFeed, slug: slug, user_id: user_id)
+    Repo.delete(filtered_feed)
+  end
 end

@@ -281,6 +281,101 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
     end
   end
 
+  describe "DELETE /filtered_feeds/:slug - unauthenticated" do
+    test "redirects to login page", %{conn: conn} do
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: user.id})
+
+      conn = delete(conn, ~p"/filtered_feeds/#{feed.slug}")
+      assert redirected_to(conn) == ~p"/users/log_in"
+    end
+  end
+
+  describe "DELETE /filtered_feeds/:slug - authenticated" do
+    test "deletes filtered feed for owner", %{conn: conn} do
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: user.id})
+
+      conn =
+        conn
+        |> log_in_user(user)
+        |> delete(~p"/filtered_feeds/#{feed.slug}")
+
+      assert redirected_to(conn) == ~p"/"
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "deleted successfully"
+
+      # Verify feed is actually deleted
+      assert Repo.get(FilteredFeed, feed.id) == nil
+    end
+
+    test "deletes associated feed item decisions on cascade", %{conn: conn} do
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: user.id})
+
+      # Create a feed item decision
+      {:ok, decision} =
+        %RssAssistant.FeedItemDecision{}
+        |> RssAssistant.FeedItemDecision.changeset(%{
+          item_id: "test-item",
+          should_include: false,
+          reasoning: "Test reason",
+          filtered_feed_id: feed.id
+        })
+        |> Repo.insert()
+
+      conn =
+        conn
+        |> log_in_user(user)
+        |> delete(~p"/filtered_feeds/#{feed.slug}")
+
+      assert redirected_to(conn) == ~p"/"
+
+      # Verify both feed and decision are deleted
+      assert Repo.get(FilteredFeed, feed.id) == nil
+      assert Repo.get(RssAssistant.FeedItemDecision, decision.id) == nil
+    end
+
+    test "returns 404 when deleting another user's feed", %{conn: conn} do
+      owner = user_fixture()
+      other_user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: owner.id})
+
+      assert_error_sent 404, fn ->
+        conn
+        |> log_in_user(other_user)
+        |> delete(~p"/filtered_feeds/#{feed.slug}")
+      end
+
+      # Verify feed still exists
+      assert Repo.get(FilteredFeed, feed.id) != nil
+    end
+
+    test "returns 404 for non-existent slug", %{conn: conn} do
+      user = user_fixture()
+
+      assert_error_sent 404, fn ->
+        conn
+        |> log_in_user(user)
+        |> delete(~p"/filtered_feeds/nonexistent")
+      end
+    end
+
+    test "decrements user feed count after deletion", %{conn: conn} do
+      user = user_fixture()
+      Accounts.change_user_plan(user, "Pro")
+      feed = filtered_feed_fixture(%{user_id: user.id})
+
+      initial_count = Accounts.get_user_feed_count(user.id)
+
+      conn
+      |> log_in_user(user)
+      |> delete(~p"/filtered_feeds/#{feed.slug}")
+
+      final_count = Accounts.get_user_feed_count(user.id)
+      assert final_count == initial_count - 1
+    end
+  end
+
   describe "filtered items display" do
     test "shows excluded items but not included items", %{conn: conn} do
       user = user_fixture()
