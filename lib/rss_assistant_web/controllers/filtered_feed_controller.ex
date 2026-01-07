@@ -81,6 +81,22 @@ defmodule RssAssistantWeb.FilteredFeedController do
     end
   end
 
+  def delete(conn, %{"slug" => slug}) do
+    user = conn.assigns.current_user
+
+    case Accounts.delete_user_filtered_feed(user, slug) do
+      {:ok, _filtered_feed} ->
+        conn
+        |> put_flash(:info, "Filtered feed deleted successfully!")
+        |> redirect(to: ~p"/")
+
+      {:error, _changeset} ->
+        conn
+        |> put_flash(:error, "Unable to delete filtered feed")
+        |> redirect(to: ~p"/filtered_feeds/#{slug}")
+    end
+  end
+
   def rss_feed(conn, %{"slug" => slug}) do
     filtered_feed = Repo.get_by!(FilteredFeed, slug: slug)
 

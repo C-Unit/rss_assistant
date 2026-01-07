@@ -11,6 +11,7 @@ defmodule RssAssistant.FilteredFeed do
     field :slug, :string
 
     belongs_to :user, RssAssistant.Accounts.User
+    has_many :feed_item_decisions, RssAssistant.FeedItemDecision, on_delete: :delete_all
 
     timestamps(type: :utc_datetime)
   end
