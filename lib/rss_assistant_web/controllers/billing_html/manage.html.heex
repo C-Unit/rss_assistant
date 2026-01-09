@@ -1,0 +1,132 @@
+<.flash_group flash={@flash} />
+<div class="px-4 py-10 sm:px-6 sm:py-28 lg:px-8 xl:px-28 xl:py-32">
+  <div class="mx-auto max-w-4xl">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Manage Subscription</h1>
+
+    <%= if @subscription do %>
+      <div class="bg-white shadow rounded-lg p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 class="text-sm font-medium text-gray-500">Current Plan</h3>
+            <p class="mt-1 text-2xl font-semibold text-gray-900">{@subscription.plan.name}</p>
+          </div>
+
+          <div>
+            <h3 class="text-sm font-medium text-gray-500">Status</h3>
+            <p class={[
+              "mt-1 text-lg font-semibold",
+              case @subscription.status do
+                "active" -> "text-green-600"
+                "trialing" -> "text-blue-600"
+                "past_due" -> "text-yellow-600"
+                "canceled" -> "text-red-600"
+                _ -> "text-gray-600"
+              end
+            ]}>
+              {String.capitalize(@subscription.status)}
+            </p>
+          </div>
+
+          <%= if @subscription.current_period_end do %>
+            <div>
+              <h3 class="text-sm font-medium text-gray-500">
+                <%= if @subscription.cancel_at_period_end do %>
+                  Cancels On
+                <% else %>
+                  Renews On
+                <% end %>
+              </h3>
+              <p class="mt-1 text-lg text-gray-900">
+                {Calendar.strftime(@subscription.current_period_end, "%B %d, %Y")}
+              </p>
+            </div>
+          <% end %>
+
+          <%= if @subscription.cancel_at_period_end do %>
+            <div>
+              <h3 class="text-sm font-medium text-gray-500">Note</h3>
+              <p class="mt-1 text-sm text-yellow-600">
+                Your subscription will be canceled at the end of the billing period.
+              </p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Subscription Actions</h2>
+
+        <div class="space-y-4">
+          <div>
+            <a
+              href={~p"/billing/portal"}
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+            >
+              Manage Payment Method
+            </a>
+            <p class="mt-2 text-sm text-gray-500">
+              Update your payment method, view invoices, and more in the Stripe customer portal.
+            </p>
+          </div>
+
+          <%= if RssAssistant.Billing.Subscription.active?(@subscription) do %>
+            <%= if @subscription.cancel_at_period_end do %>
+              <div class="pt-4 border-t border-gray-200">
+                <form action={~p"/billing/reactivate"} method="post">
+                  <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                  <button
+                    type="submit"
+                    class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    Reactivate Subscription
+                  </button>
+                </form>
+                <p class="mt-2 text-sm text-gray-500">
+                  Continue your subscription beyond the current billing period.
+                </p>
+              </div>
+            <% else %>
+              <div class="pt-4 border-t border-gray-200">
+                <form
+                  action={~p"/billing/cancel"}
+                  method="post"
+                  onsubmit="return confirm('Are you sure you want to cancel your subscription? You will retain access until the end of your billing period.');"
+                >
+                  <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                  <button
+                    type="submit"
+                    class="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50"
+                  >
+                    Cancel Subscription
+                  </button>
+                </form>
+                <p class="mt-2 text-sm text-gray-500">
+                  Cancel your subscription at the end of the current billing period.
+                </p>
+              </div>
+            <% end %>
+          <% end %>
+
+          <div class="pt-4 border-t border-gray-200">
+            <a
+              href={~p"/billing/pricing"}
+              class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            >
+              View All Plans
+            </a>
+          </div>
+        </div>
+      </div>
+    <% else %>
+      <div class="bg-white shadow rounded-lg p-6">
+        <p class="text-gray-600 mb-4">You don't have an active subscription.</p>
+        <a
+          href={~p"/billing/pricing"}
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+        >
+          View Pricing Plans
+        </a>
+      </div>
+    <% end %>
+  </div>
+</div>

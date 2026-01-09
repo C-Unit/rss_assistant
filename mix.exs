@@ -70,6 +70,7 @@ defmodule RssAssistant.MixProject do
       {:sweet_xml, "~> 0.7.0"},
       {:openai_ex, "~> 0.9.18"},
       {:html_sanitize_ex, "~> 1.4"},
+      {:stripity_stripe, "~> 3.0"},
       {:mox, "~> 1.0", only: :test},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
