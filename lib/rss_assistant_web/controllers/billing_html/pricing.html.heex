@@ -1,0 +1,158 @@
+<.flash_group flash={@flash} />
+<div class="px-4 py-10 sm:px-6 sm:py-28 lg:px-8 xl:px-28 xl:py-32">
+  <div class="mx-auto max-w-6xl">
+    <div class="text-center mb-12">
+      <p class="text-[2rem] font-semibold leading-10 tracking-tighter text-zinc-900">
+        Choose Your Plan
+      </p>
+      <p class="mt-4 text-base leading-7 text-zinc-600">
+        Select the plan that best fits your needs
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+      <%= for plan <- @plans do %>
+        <div class={[
+          "bg-white rounded-lg shadow-lg p-8 border-2",
+          if(plan.name == "Pro", do: "border-blue-500", else: "border-gray-200")
+        ]}>
+          <%= if plan.name == "Pro" do %>
+            <div class="absolute -mt-12 ml-auto mr-auto left-0 right-0 w-32 mx-auto">
+              <span class="bg-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                POPULAR
+              </span>
+            </div>
+          <% end %>
+
+          <div class="text-center">
+            <h3 class="text-2xl font-bold text-gray-900">{plan.name}</h3>
+            <div class="mt-4">
+              <span class="text-5xl font-extrabold text-gray-900">
+                ${Decimal.to_string(plan.price, :normal)}
+              </span>
+              <%= if plan.name != "Free" do %>
+                <span class="text-xl text-gray-600">/month</span>
+              <% end %>
+            </div>
+          </div>
+
+          <ul class="mt-8 space-y-4">
+            <li class="flex items-start">
+              <svg
+                class="h-6 w-6 text-green-500 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span class="text-gray-700">
+                <%= if plan.max_feeds == 0 do %>
+                  Limited filtered feeds
+                <% else %>
+                  Up to {plan.max_feeds} filtered feeds
+                <% end %>
+              </span>
+            </li>
+            <li class="flex items-start">
+              <svg
+                class="h-6 w-6 text-green-500 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span class="text-gray-700">AI-powered feed filtering</span>
+            </li>
+            <%= if plan.name == "Pro" do %>
+              <li class="flex items-start">
+                <svg
+                  class="h-6 w-6 text-green-500 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                <span class="text-gray-700">Priority support</span>
+              </li>
+            <% end %>
+          </ul>
+
+          <div class="mt-8">
+            <%= if @current_user do %>
+              <%= if @current_user.plan_id == plan.id do %>
+                <%= if @subscription && RssAssistant.Billing.Subscription.active?(@subscription) do %>
+                  <button
+                    disabled
+                    class="w-full bg-gray-300 text-gray-600 font-semibold py-3 px-6 rounded-lg cursor-not-allowed"
+                  >
+                    Current Plan
+                  </button>
+                <% else %>
+                  <button
+                    disabled
+                    class="w-full bg-gray-300 text-gray-600 font-semibold py-3 px-6 rounded-lg cursor-not-allowed"
+                  >
+                    Current Plan
+                  </button>
+                <% end %>
+              <% else %>
+                <%= if plan.name == "Free" do %>
+                  <a
+                    href={~p"/billing/manage"}
+                    class="block w-full text-center bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+                  >
+                    Manage Subscription
+                  </a>
+                <% else %>
+                  <form action={~p"/billing/checkout"} method="post">
+                    <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                    <input type="hidden" name="plan" value={plan.name} />
+                    <button
+                      type="submit"
+                      class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+                    >
+                      Upgrade to {plan.name}
+                    </button>
+                  </form>
+                <% end %>
+              <% end %>
+            <% else %>
+              <a
+                href={~p"/users/register"}
+                class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+              >
+                Get Started
+              </a>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%= if @current_user && @subscription do %>
+      <div class="mt-8 text-center">
+        <a href={~p"/billing/manage"} class="text-blue-600 hover:text-blue-800">
+          Manage your subscription →
+        </a>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -24,6 +24,9 @@ defmodule RssAssistantWeb.Router do
 
     # RSS feeds are public (but scoped to user in controller)
     get "/filtered_feeds/:slug/rss", FilteredFeedController, :rss_feed
+
+    # Billing - public pricing page
+    get "/billing/pricing", BillingController, :pricing
   end
 
   scope "/", RssAssistantWeb do
@@ -34,12 +37,22 @@ defmodule RssAssistantWeb.Router do
     get "/filtered_feeds/:slug", FilteredFeedController, :show
     patch "/filtered_feeds/:slug", FilteredFeedController, :update
     delete "/filtered_feeds/:slug", FilteredFeedController, :delete
+
+    # Billing - authenticated routes
+    post "/billing/checkout", BillingController, :create_checkout_session
+    get "/billing/success", BillingController, :success
+    get "/billing/manage", BillingController, :manage
+    get "/billing/portal", BillingController, :portal
+    post "/billing/cancel", BillingController, :cancel
+    post "/billing/reactivate", BillingController, :reactivate
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", RssAssistantWeb do
-  #   pipe_through :api
-  # end
+  # Stripe webhooks - no CSRF protection needed
+  scope "/webhooks", RssAssistantWeb do
+    pipe_through :api
+
+    post "/stripe", WebhookController, :stripe
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:rss_assistant, :dev_routes) do

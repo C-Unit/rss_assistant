@@ -19,6 +19,14 @@
         </li>
         <li>
           <.link
+            href={~p"/billing/pricing"}
+            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
+          >
+            Pricing
+          </.link>
+        </li>
+        <li>
+          <.link
             href={~p"/users/settings"}
             class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
           >
@@ -35,6 +43,14 @@
           </.link>
         </li>
       <% else %>
+        <li>
+          <.link
+            href={~p"/billing/pricing"}
+            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
+          >
+            Pricing
+          </.link>
+        </li>
         <li>
           <.link
             href={~p"/users/register"}

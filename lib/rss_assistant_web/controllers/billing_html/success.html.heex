@@ -1,0 +1,41 @@
+<.flash_group flash={@flash} />
+<div class="px-4 py-10 sm:px-6 sm:py-28 lg:px-8 xl:px-28 xl:py-32">
+  <div class="mx-auto max-w-2xl text-center">
+    <div class="mb-8">
+      <svg
+        class="mx-auto h-16 w-16 text-green-500"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    </div>
+
+    <h1 class="text-3xl font-bold text-gray-900 mb-4">Payment Successful!</h1>
+
+    <p class="text-lg text-gray-600 mb-8">
+      Thank you for subscribing. Your plan has been upgraded and you can now enjoy all the benefits.
+    </p>
+
+    <div class="space-x-4">
+      <a
+        href={~p"/"}
+        class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+      >
+        Go to Dashboard
+      </a>
+      <a
+        href={~p"/billing/manage"}
+        class="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+      >
+        Manage Subscription
+      </a>
+    </div>
+  </div>
+</div>

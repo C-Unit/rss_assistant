@@ -27,6 +27,17 @@ if System.get_env("OPENROUTER_API_KEY") && config_env() != :test do
     filter_impl: RssAssistant.Filter.OpenRouter
 end
 
+# Configure Stripe
+if config_env() != :test do
+  config :stripity_stripe,
+    api_key: System.get_env("STRIPE_SECRET_KEY"),
+    public_key: System.get_env("STRIPE_PUBLIC_KEY")
+
+  config :rss_assistant,
+    stripe_pro_price_id: System.get_env("STRIPE_PRO_PRICE_ID"),
+    stripe_webhook_secret: System.get_env("STRIPE_WEBHOOK_SECRET")
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
