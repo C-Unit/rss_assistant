@@ -60,4 +60,56 @@
       </:actions>
     </.simple_form>
   </div>
+  <div>
+    <h3 class="text-lg font-medium leading-6 text-zinc-900">Subscription</h3>
+    <div class="mt-2 max-w-xl text-sm text-zinc-600">
+      <p>
+        Current Plan: <strong>{@current_user.plan.name}</strong>
+        <%= if @current_user.plan.name == "Pro" do %>
+          (${@current_user.plan.price}/month)
+        <% end %>
+      </p>
+    </div>
+
+    <div class="mt-4">
+      <%= cond do %>
+        <%!-- Free user - show upgrade button --%>
+        <% @current_user.plan.name == "Free" && is_nil(@subscription) -> %>
+          <.simple_form for={%{}} action={~p"/billing/checkout"} method="post" id="upgrade-form">
+            <input type="hidden" name="plan" value="Pro" />
+            <:actions>
+              <.button type="submit">Upgrade to Pro ($99.99/month)</.button>
+            </:actions>
+          </.simple_form>
+
+          <%!-- Pro user with active subscription --%>
+        <% @subscription && RssAssistant.Billing.Subscription.active?(@subscription) -> %>
+          <div>
+            <%= if @subscription.cancel_at_period_end do %>
+              <p class="text-sm text-amber-600 mb-2">
+                Your subscription will cancel on {if @subscription.current_period_end,
+                  do: Calendar.strftime(@subscription.current_period_end, "%B %d, %Y"),
+                  else: "unknown date"}
+              </p>
+            <% else %>
+              <p class="text-sm text-zinc-500 mb-2">
+                Next billing date: {if @subscription.current_period_end,
+                  do: Calendar.strftime(@subscription.current_period_end, "%B %d, %Y"),
+                  else: "unknown date"}
+              </p>
+            <% end %>
+
+            <.simple_form for={%{}} action={~p"/billing/portal"} method="post" id="portal-form">
+              <:actions>
+                <.button type="submit">Manage Subscription</.button>
+              </:actions>
+            </.simple_form>
+          </div>
+
+          <%!-- Edge case: Pro plan but no subscription (manual upgrade or data issue) --%>
+        <% true -> %>
+          <p class="text-sm text-zinc-500">Contact support for subscription assistance.</p>
+      <% end %>
+    </div>
+  </div>
 </div>

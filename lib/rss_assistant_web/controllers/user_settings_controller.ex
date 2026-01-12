@@ -2,9 +2,11 @@ defmodule RssAssistantWeb.UserSettingsController do
   use RssAssistantWeb, :controller
 
   alias RssAssistant.Accounts
+  alias RssAssistant.Billing
   alias RssAssistantWeb.UserAuth
 
   plug :assign_email_and_password_changesets
+  plug :assign_subscription when action in [:edit, :update]
 
   def edit(conn, _params) do
     render(conn, :edit)
@@ -65,10 +67,17 @@ defmodule RssAssistantWeb.UserSettingsController do
   end
 
   defp assign_email_and_password_changesets(conn, _opts) do
-    user = conn.assigns.current_user
+    user = conn.assigns.current_user |> RssAssistant.Repo.preload(:plan)
 
     conn
+    |> assign(:current_user, user)
     |> assign(:email_changeset, Accounts.change_user_email(user))
     |> assign(:password_changeset, Accounts.change_user_password(user))
+  end
+
+  defp assign_subscription(conn, _opts) do
+    user = conn.assigns.current_user
+    subscription = Billing.get_subscription_by_user_id(user.id)
+    assign(conn, :subscription, subscription)
   end
 end

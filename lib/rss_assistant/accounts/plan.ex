@@ -9,6 +9,8 @@ defmodule RssAssistant.Accounts.Plan do
     field :name, :string
     field :max_feeds, :integer
     field :price, :decimal
+    field :stripe_price_id, :string
+    field :stripe_product_id, :string
 
     has_many :users, RssAssistant.Accounts.User
 
@@ -18,7 +20,7 @@ defmodule RssAssistant.Accounts.Plan do
   @doc false
   def changeset(plan, attrs) do
     plan
-    |> cast(attrs, [:name, :max_feeds, :price])
+    |> cast(attrs, [:name, :max_feeds, :price, :stripe_price_id, :stripe_product_id])
     |> validate_required([:name, :max_feeds, :price])
   end
 end

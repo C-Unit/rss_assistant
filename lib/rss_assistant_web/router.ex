@@ -34,12 +34,11 @@ defmodule RssAssistantWeb.Router do
     get "/filtered_feeds/:slug", FilteredFeedController, :show
     patch "/filtered_feeds/:slug", FilteredFeedController, :update
     delete "/filtered_feeds/:slug", FilteredFeedController, :delete
-  end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", RssAssistantWeb do
-  #   pipe_through :api
-  # end
+    post "/billing/checkout", BillingController, :create_checkout_session
+    get "/billing/success", BillingController, :checkout_success
+    post "/billing/portal", BillingController, :customer_portal
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:rss_assistant, :dev_routes) do
