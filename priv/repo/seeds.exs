@@ -13,19 +13,34 @@
 alias RssAssistant.Repo
 alias RssAssistant.Accounts.Plan
 
-# Create default plans
+upsert_plan = fn attrs ->
+  case Repo.get_by(Plan, name: attrs.name) do
+    nil ->
+      %Plan{}
+      |> Plan.changeset(attrs)
+      |> Repo.insert!()
+
+    existing ->
+      existing
+      |> Plan.changeset(attrs)
+      |> Repo.update!()
+  end
+end
+
+# Create or update default plans
 free_plan =
-  Repo.insert!(%Plan{
+  upsert_plan.(%{
     name: "Free",
     max_feeds: 0,
     price: Decimal.new("0.00")
   })
 
-_pro_plan =
-  Repo.insert!(%Plan{
+pro_plan =
+  upsert_plan.(%{
     name: "Pro",
     max_feeds: 100,
-    price: Decimal.new("99.99")
+    price: Decimal.new("99.99"),
+    stripe_price_id: System.get_env("STRIPE_PRO_PRICE_ID")
   })
 
-IO.puts("Created default plans with IDs: Free (#{free_plan.id})")
+IO.puts("Upserted plans: Free (#{free_plan.id}), Pro (#{pro_plan.id})")

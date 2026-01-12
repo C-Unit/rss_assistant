@@ -20,6 +20,15 @@ if System.get_env("PHX_SERVER") do
   config :rss_assistant, RssAssistantWeb.Endpoint, server: true
 end
 
+# Stripe configuration
+if api_key = System.get_env("STRIPE_SECRET_KEY") do
+  config :stripity_stripe, api_key: api_key
+end
+
+config :rss_assistant,
+  stripe_webhook_secret: System.get_env("STRIPE_WEBHOOK_SECRET"),
+  stripe_pro_price_id: System.get_env("STRIPE_PRO_PRICE_ID")
+
 # Configure OpenRouter AI client
 # Don't override in test environment to allow mocking
 if System.get_env("OPENROUTER_API_KEY") && config_env() != :test do

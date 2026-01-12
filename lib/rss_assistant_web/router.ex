@@ -34,6 +34,11 @@ defmodule RssAssistantWeb.Router do
     get "/filtered_feeds/:slug", FilteredFeedController, :show
     patch "/filtered_feeds/:slug", FilteredFeedController, :update
     delete "/filtered_feeds/:slug", FilteredFeedController, :delete
+
+    get "/billing/checkout", BillingController, :checkout
+    get "/billing/portal", BillingController, :portal
+    get "/billing/success", BillingController, :success
+    get "/billing/cancel", BillingController, :cancel
   end
 
   # Other scopes may use custom stacks.

@@ -12,6 +12,10 @@ defmodule RssAssistant.Accounts.User do
     field :current_password, :string, virtual: true, redact: true
     field :confirmed_at, :utc_datetime
 
+    field :stripe_customer_id, :string
+    field :stripe_subscription_id, :string
+    field :stripe_subscription_status, :string
+
     belongs_to :plan, RssAssistant.Accounts.Plan
     has_many :filtered_feeds, RssAssistant.FilteredFeed
 
@@ -175,5 +179,13 @@ defmodule RssAssistant.Accounts.User do
     else
       add_error(changeset, :current_password, "is not valid")
     end
+  end
+
+  @doc """
+  A user changeset for updating Stripe-related fields.
+  """
+  def stripe_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:stripe_customer_id, :stripe_subscription_id, :stripe_subscription_status])
   end
 end
