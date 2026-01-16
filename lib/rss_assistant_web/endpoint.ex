@@ -41,6 +41,11 @@ defmodule RssAssistantWeb.Endpoint do
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
+  plug Stripe.WebhookPlug,
+    at: "/webhooks/stripe",
+    handler: RssAssistant.Billing.StripeWebhookHandler,
+    secret: {Application, :get_env, [:rss_assistant, :stripe_webhook_secret]}
+
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],

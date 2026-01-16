@@ -72,7 +72,8 @@ defmodule RssAssistant.MixProject do
       {:openai_ex, "~> 0.9.18"},
       {:html_sanitize_ex, "~> 1.4"},
       {:mox, "~> 1.0", only: :test},
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:stripity_stripe, "~> 3.2"}
     ]
   end
 

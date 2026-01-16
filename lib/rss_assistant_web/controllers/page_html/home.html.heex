@@ -34,20 +34,40 @@
           </div>
         </div>
 
-        <%= if @can_create_feed do %>
-          <div class="mb-6">
+        <div class="flex flex-wrap gap-3 mb-6">
+          <%= if @can_create_feed do %>
             <a
               href={~p"/filtered_feeds/new"}
-              class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              class="px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
             >
               Create New Filtered Feed
             </a>
-          </div>
-        <% else %>
+          <% end %>
+          <%= if @plan.name == "Free" do %>
+            <a
+              href={~p"/billing/checkout"}
+              class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+            >
+              Upgrade to Pro - $99.99/month
+            </a>
+          <% else %>
+            <a
+              href={~p"/billing/portal"}
+              class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+            >
+              Manage Subscription
+            </a>
+          <% end %>
+        </div>
+
+        <%= if !@can_create_feed do %>
           <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
             <p class="text-sm text-yellow-800">
               You've reached your plan limit of {@plan.max_feeds} filtered feeds.
-              Contact support to upgrade your plan.
+              <%= if @plan.name == "Free" do %>
+                <a href={~p"/billing/checkout"} class="underline font-medium">Upgrade to Pro</a>
+                to create more.
+              <% end %>
             </p>
           </div>
         <% end %>
