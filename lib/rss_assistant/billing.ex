@@ -125,7 +125,9 @@ defmodule RssAssistant.Billing do
         {:ok, :user_not_found}
 
       user ->
-        {:ok, _user} = update_user_stripe_info(user, %{stripe_subscription_status: to_string(status)})
+        {:ok, _user} =
+          update_user_stripe_info(user, %{stripe_subscription_status: to_string(status)})
+
         Logger.info("User #{user.id} subscription status updated to #{status}")
         {:ok, :updated}
     end
