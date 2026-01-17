@@ -73,8 +73,8 @@
 
     <div class="mt-4">
       <%= cond do %>
-        <%!-- Free user - show upgrade button --%>
-        <% @current_user.plan.name == "Free" && is_nil(@subscription) -> %>
+        <%!-- No active subscription - show upgrade button --%>
+        <% is_nil(@subscription) || !RssAssistant.Billing.Subscription.active?(@subscription) -> %>
           <.simple_form for={%{}} action={~p"/billing/checkout"} method="post" id="upgrade-form">
             <input type="hidden" name="plan" value="Pro" />
             <:actions>
