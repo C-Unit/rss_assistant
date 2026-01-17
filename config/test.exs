@@ -40,3 +40,10 @@ config :phoenix_live_view,
 
 # Use mock filter implementation for testing
 config :rss_assistant, filter_impl: RssAssistant.Filter.Mock
+
+# Mock Stripe in tests
+config :stripity_stripe,
+  api_key: "sk_test_mock_key"
+
+config :rss_assistant,
+  stripe_webhook_secret: "whsec_test_secret"

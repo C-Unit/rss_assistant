@@ -11,7 +11,9 @@
       "Bash(mix ecto.gen.migration:*)",
       "Bash(mix ecto.migrate:*)",
       "Bash(rg:*)",
-      "Bash(mix precommit:*)"
+      "Bash(mix precommit:*)",
+      "WebSearch",
+      "Bash(mix deps.compile:*)"
     ],
     "deny": []
   }

@@ -51,10 +51,12 @@ defmodule RssAssistant.AccountsFixtures do
   end
 
   def free_plan_fixture do
-    plan_fixture(%{name: "Free", max_feeds: 0, price: Decimal.new("0.00")})
+    RssAssistant.Repo.get_by(Plan, name: "Free") ||
+      plan_fixture(%{name: "Free", max_feeds: 0, price: Decimal.new("0.00")})
   end
 
   def pro_plan_fixture do
-    plan_fixture(%{name: "Pro", max_feeds: 100, price: Decimal.new("99.99")})
+    RssAssistant.Repo.get_by(Plan, name: "Pro") ||
+      plan_fixture(%{name: "Pro", max_feeds: 100, price: Decimal.new("99.99")})
   end
 end

@@ -38,3 +38,5 @@ npm-debug.log
 # Private documentation
 README.private.md
 
+.env
+.envrc

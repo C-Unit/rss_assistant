@@ -1,31 +1,40 @@
-# Script for populating the database. You can run it as:
-#
-#     mix run priv/repo/seeds.exs
-#
-# Inside the script, you can read and write to any of your
-# repositories directly:
-#
-#     RssAssistant.Repo.insert!(%RssAssistant.SomeSchema{})
-#
-# We recommend using the bang functions (`insert!`, `update!`
-# and so on) as they will fail if something goes wrong.
-
 alias RssAssistant.Repo
 alias RssAssistant.Accounts.Plan
 
-# Create default plans
-free_plan =
-  Repo.insert!(%Plan{
+plans = [
+  %{
     name: "Free",
     max_feeds: 0,
-    price: Decimal.new("0.00")
-  })
-
-_pro_plan =
-  Repo.insert!(%Plan{
+    price: Decimal.new("0.00"),
+    stripe_price_id: nil,
+    stripe_product_id: nil
+  },
+  %{
     name: "Pro",
     max_feeds: 100,
-    price: Decimal.new("99.99")
-  })
+    price: Decimal.new("99.99"),
+    stripe_price_id: System.get_env("STRIPE_PRO_PRICE_ID"),
+    stripe_product_id: System.get_env("STRIPE_PRO_PRODUCT_ID")
+  }
+]
 
-IO.puts("Created default plans with IDs: Free (#{free_plan.id})")
+Enum.each(plans, fn plan_data ->
+  # 1. Attempt to find the plan by name
+  case Repo.get_by(Plan, name: plan_data.name) do
+    nil ->
+      # 2. If it doesn't exist, insert it
+      %Plan{}
+      |> Plan.changeset(plan_data)
+      |> Repo.insert!()
+
+      IO.puts("Inserted new plan: #{plan_data.name}")
+
+    existing_plan ->
+      # 3. If it does exist, update it (syncs the script values to the DB)
+      existing_plan
+      |> Plan.changeset(plan_data)
+      |> Repo.update!()
+
+      IO.puts("Updated existing plan: #{plan_data.name}")
+  end
+end)
