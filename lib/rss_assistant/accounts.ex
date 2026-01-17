@@ -409,6 +409,22 @@ defmodule RssAssistant.Accounts do
   end
 
   @doc """
+  Sets the Stripe customer ID for a user.
+  """
+  def set_stripe_customer_id(%User{} = user, customer_id) when is_binary(customer_id) do
+    user
+    |> Ecto.Changeset.change(stripe_customer_id: customer_id)
+    |> Repo.update()
+  end
+
+  @doc """
+  Gets a user by their Stripe customer ID.
+  """
+  def get_user_by_stripe_customer_id(customer_id) when is_binary(customer_id) do
+    Repo.get_by(User, stripe_customer_id: customer_id)
+  end
+
+  @doc """
   Checks if a user can create more filtered feeds based on their plan.
   Returns a map with the result and plan information.
   """

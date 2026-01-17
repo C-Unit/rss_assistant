@@ -106,33 +106,26 @@ defmodule RssAssistantWeb.BillingController do
   end
 
   defp get_or_create_stripe_customer(user) do
-    case Billing.get_subscription_by_user_id(user.id) do
-      %Billing.Subscription{stripe_customer_id: customer_id} ->
-        {:ok, customer_id}
-
+    case user.stripe_customer_id do
       nil ->
         create_new_stripe_customer(user)
+
+      customer_id ->
+        {:ok, customer_id}
     end
   end
 
   defp create_new_stripe_customer(user) do
-    with {:ok, %{id: customer_id}} <- StripeService.create_customer(user),
-         free_plan <- Accounts.get_plan_by_name("Free"),
-         {:ok, _subscription} <- create_initial_subscription(user, customer_id, free_plan) do
-      {:ok, customer_id}
-    else
+    case StripeService.create_customer(user) do
+      {:ok, %{id: customer_id}} ->
+        case Accounts.set_stripe_customer_id(user, customer_id) do
+          {:ok, _user} -> {:ok, customer_id}
+          error -> error
+        end
+
       {:error, error} ->
         Logger.error("Failed to create Stripe customer: #{inspect(error)}")
         {:error, error}
     end
-  end
-
-  defp create_initial_subscription(user, customer_id, free_plan) do
-    Billing.create_subscription(%{
-      user_id: user.id,
-      plan_id: free_plan.id,
-      stripe_customer_id: customer_id,
-      status: "incomplete"
-    })
   end
 end

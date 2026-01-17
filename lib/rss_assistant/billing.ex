@@ -90,8 +90,8 @@ defmodule RssAssistant.Billing do
     Logger.info("Processing Stripe webhook: #{event_type}")
 
     case event_type do
-      "checkout.session.completed" ->
-        handle_checkout_session_completed(object)
+      "customer.subscription.created" ->
+        handle_subscription_created(object)
 
       "customer.subscription.updated" ->
         handle_subscription_updated(object)
@@ -117,9 +117,64 @@ defmodule RssAssistant.Billing do
   end
 
   @doc """
+  Handles customer.subscription.created event.
+
+  Creates the subscription record when Stripe creates a new subscription.
+  """
+  def handle_subscription_created(stripe_subscription) do
+    subscription_id = stripe_subscription.id
+    customer_id = stripe_subscription.customer
+
+    with {:ok, user} <- find_user_by_customer_id(customer_id),
+         nil <- get_subscription_by_stripe_subscription_id(subscription_id) do
+      create_subscription_from_stripe(stripe_subscription, user)
+    else
+      {:error, :user_not_found} = error ->
+        Logger.warning("User not found for Stripe customer ID: #{customer_id}")
+        error
+
+      %Subscription{} = existing ->
+        Logger.info("Subscription already exists for #{subscription_id}")
+        {:ok, existing}
+    end
+  end
+
+  defp find_user_by_customer_id(customer_id) do
+    case Accounts.get_user_by_stripe_customer_id(customer_id) do
+      %Accounts.User{} = user -> {:ok, user}
+      nil -> {:error, :user_not_found}
+    end
+  end
+
+  defp create_subscription_from_stripe(stripe_subscription, user) do
+    plan = determine_plan_from_stripe_subscription(stripe_subscription)
+
+    attrs = %{
+      user_id: user.id,
+      plan_id: plan.id,
+      stripe_customer_id: stripe_subscription.customer,
+      stripe_subscription_id: stripe_subscription.id,
+      stripe_price_id: get_price_id_from_subscription(stripe_subscription),
+      status: stripe_subscription.status,
+      current_period_start: unix_to_naive_datetime(stripe_subscription.current_period_start),
+      current_period_end: unix_to_naive_datetime(stripe_subscription.current_period_end),
+      cancel_at_period_end: stripe_subscription.cancel_at_period_end || false
+    }
+
+    case create_subscription(attrs) do
+      {:ok, subscription} ->
+        sync_user_plan(subscription)
+        {:ok, subscription}
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
   Handles checkout.session.completed event.
 
-  Creates or updates subscription record and upgrades user to Pro plan.
+  Updates subscription if needed (legacy support).
   """
   def handle_checkout_session_completed(session) do
     customer_id = session.customer
