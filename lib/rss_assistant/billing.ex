@@ -5,6 +5,8 @@ defmodule RssAssistant.Billing do
 
   require Logger
 
+  import Ecto.Query
+
   alias RssAssistant.Accounts
   alias RssAssistant.Billing.Subscription
   alias RssAssistant.Repo
@@ -134,26 +136,51 @@ defmodule RssAssistant.Billing do
   Upserts a subscription from a Stripe subscription object.
 
   This is idempotent - it will create the subscription if it doesn't exist,
-  or update it if it does. Handles race conditions between created/updated events.
+  or update it if it does. Uses SELECT FOR UPDATE to prevent race conditions
+  between parallel webhook events.
   """
   def upsert_subscription_from_stripe(stripe_subscription) do
-    subscription_id = stripe_subscription.id
+    Repo.transact(fn -> do_upsert_subscription(stripe_subscription) end)
+  end
+
+  defp do_upsert_subscription(stripe_subscription) do
     customer_id = stripe_subscription.customer
 
-    case get_subscription_by_stripe_subscription_id(subscription_id) do
-      %Subscription{} = subscription ->
-        update_subscription_from_stripe(subscription, stripe_subscription)
-
-      nil ->
-        create_subscription_from_stripe(stripe_subscription, customer_id)
+    with {:ok, user} <- find_user_by_customer_id(customer_id),
+         subscription <- get_subscription_for_update(user.id),
+         attrs <- build_subscription_attrs(stripe_subscription, user, customer_id),
+         {:ok, sub} <- upsert_subscription(subscription, attrs) do
+      sync_user_plan(sub)
+      {:ok, sub}
     end
   end
 
-  defp update_subscription_from_stripe(subscription, stripe_subscription) do
+  defp find_user_by_customer_id(customer_id) do
+    case Accounts.get_user_by_stripe_customer_id(customer_id) do
+      %Accounts.User{} = user ->
+        {:ok, user}
+
+      nil ->
+        Logger.warning("User not found for Stripe customer ID: #{customer_id}")
+        {:error, :user_not_found}
+    end
+  end
+
+  defp get_subscription_for_update(user_id) do
+    Subscription
+    |> where(user_id: ^user_id)
+    |> lock("FOR UPDATE")
+    |> Repo.one()
+  end
+
+  defp build_subscription_attrs(stripe_subscription, user, customer_id) do
     plan = determine_plan_from_stripe_subscription(stripe_subscription)
 
-    attrs = %{
+    %{
+      user_id: user.id,
       plan_id: plan.id,
+      stripe_customer_id: customer_id,
+      stripe_subscription_id: stripe_subscription.id,
       stripe_price_id: get_price_id_from_subscription(stripe_subscription),
       status: stripe_subscription.status,
       current_period_start: unix_to_naive_datetime(stripe_subscription.current_period_start),
@@ -165,48 +192,10 @@ defmodule RssAssistant.Billing do
           else: nil
         )
     }
-
-    case update_subscription(subscription, attrs) do
-      {:ok, updated} ->
-        sync_user_plan(updated)
-        {:ok, updated}
-
-      error ->
-        error
-    end
   end
 
-  defp create_subscription_from_stripe(stripe_subscription, customer_id) do
-    case Accounts.get_user_by_stripe_customer_id(customer_id) do
-      %Accounts.User{} = user ->
-        plan = determine_plan_from_stripe_subscription(stripe_subscription)
-
-        attrs = %{
-          user_id: user.id,
-          plan_id: plan.id,
-          stripe_customer_id: customer_id,
-          stripe_subscription_id: stripe_subscription.id,
-          stripe_price_id: get_price_id_from_subscription(stripe_subscription),
-          status: stripe_subscription.status,
-          current_period_start: unix_to_naive_datetime(stripe_subscription.current_period_start),
-          current_period_end: unix_to_naive_datetime(stripe_subscription.current_period_end),
-          cancel_at_period_end: stripe_subscription.cancel_at_period_end || false
-        }
-
-        case create_subscription(attrs) do
-          {:ok, subscription} ->
-            sync_user_plan(subscription)
-            {:ok, subscription}
-
-          error ->
-            error
-        end
-
-      nil ->
-        Logger.warning("User not found for Stripe customer ID: #{customer_id}")
-        {:error, :user_not_found}
-    end
-  end
+  defp upsert_subscription(nil, attrs), do: create_subscription(attrs)
+  defp upsert_subscription(subscription, attrs), do: update_subscription(subscription, attrs)
 
   @doc """
   Handles customer.subscription.deleted event.

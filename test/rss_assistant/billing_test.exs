@@ -87,10 +87,11 @@ defmodule RssAssistant.BillingTest do
       %{user: user, subscription: subscription, free_plan: free_plan, pro_plan: pro_plan}
     end
 
-    test "updates subscription status", %{subscription: subscription} do
+    test "updates subscription status", %{subscription: subscription, user: user} do
       stripe_subscription =
         build_stripe_subscription(%{
           id: subscription.stripe_subscription_id,
+          customer: user.stripe_customer_id,
           status: "past_due",
           current_period_start: DateTime.to_unix(DateTime.utc_now()),
           current_period_end: DateTime.to_unix(DateTime.add(DateTime.utc_now(), 30, :day))
@@ -100,10 +101,14 @@ defmodule RssAssistant.BillingTest do
       assert updated.status == "past_due"
     end
 
-    test "sets cancel_at_period_end when subscription is canceled", %{subscription: subscription} do
+    test "sets cancel_at_period_end when subscription is canceled", %{
+      subscription: subscription,
+      user: user
+    } do
       stripe_subscription =
         build_stripe_subscription(%{
           id: subscription.stripe_subscription_id,
+          customer: user.stripe_customer_id,
           status: "active",
           cancel_at_period_end: true,
           current_period_end: DateTime.to_unix(DateTime.add(DateTime.utc_now(), 30, :day))
@@ -233,6 +238,7 @@ defmodule RssAssistant.BillingTest do
       event =
         build_stripe_event("customer.subscription.updated", %{
           id: "sub_test123",
+          customer: user.stripe_customer_id,
           status: "past_due"
         })
 
