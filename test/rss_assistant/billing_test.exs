@@ -113,14 +113,33 @@ defmodule RssAssistant.BillingTest do
       assert updated.cancel_at_period_end == true
     end
 
-    test "returns error when subscription not found" do
+    test "creates subscription if not found but user exists", %{pro_plan: pro_plan} do
+      # Use a fresh user without an existing subscription
+      new_user = user_fixture()
+      {:ok, new_user} = Accounts.set_stripe_customer_id(new_user, "cus_new_user")
+
+      stripe_subscription =
+        build_stripe_subscription(%{
+          id: "sub_new",
+          customer: new_user.stripe_customer_id,
+          status: "active",
+          items: %{data: [%{price: %{id: pro_plan.stripe_price_id}}]}
+        })
+
+      assert {:ok, subscription} = Billing.handle_subscription_updated(stripe_subscription)
+      assert subscription.stripe_subscription_id == "sub_new"
+      assert subscription.user_id == new_user.id
+    end
+
+    test "returns user_not_found when subscription and user not found" do
       stripe_subscription =
         build_stripe_subscription(%{
           id: "sub_nonexistent",
+          customer: "cus_nonexistent",
           status: "active"
         })
 
-      assert {:error, :not_found} = Billing.handle_subscription_updated(stripe_subscription)
+      assert {:error, :user_not_found} = Billing.handle_subscription_updated(stripe_subscription)
     end
   end
 

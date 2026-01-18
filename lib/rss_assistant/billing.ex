@@ -118,140 +118,93 @@ defmodule RssAssistant.Billing do
 
   @doc """
   Handles customer.subscription.created event.
-
-  Creates the subscription record when Stripe creates a new subscription.
   """
   def handle_subscription_created(stripe_subscription) do
+    upsert_subscription_from_stripe(stripe_subscription)
+  end
+
+  @doc """
+  Handles customer.subscription.updated event.
+  """
+  def handle_subscription_updated(stripe_subscription) do
+    upsert_subscription_from_stripe(stripe_subscription)
+  end
+
+  @doc """
+  Upserts a subscription from a Stripe subscription object.
+
+  This is idempotent - it will create the subscription if it doesn't exist,
+  or update it if it does. Handles race conditions between created/updated events.
+  """
+  def upsert_subscription_from_stripe(stripe_subscription) do
     subscription_id = stripe_subscription.id
     customer_id = stripe_subscription.customer
 
-    with {:ok, user} <- find_user_by_customer_id(customer_id),
-         nil <- get_subscription_by_stripe_subscription_id(subscription_id) do
-      create_subscription_from_stripe(stripe_subscription, user)
-    else
-      {:error, :user_not_found} = error ->
-        Logger.warning("User not found for Stripe customer ID: #{customer_id}")
-        error
+    case get_subscription_by_stripe_subscription_id(subscription_id) do
+      %Subscription{} = subscription ->
+        update_subscription_from_stripe(subscription, stripe_subscription)
 
-      %Subscription{} = existing ->
-        Logger.info("Subscription already exists for #{subscription_id}")
-        {:ok, existing}
+      nil ->
+        create_subscription_from_stripe(stripe_subscription, customer_id)
     end
   end
 
-  defp find_user_by_customer_id(customer_id) do
-    case Accounts.get_user_by_stripe_customer_id(customer_id) do
-      %Accounts.User{} = user -> {:ok, user}
-      nil -> {:error, :user_not_found}
-    end
-  end
-
-  defp create_subscription_from_stripe(stripe_subscription, user) do
+  defp update_subscription_from_stripe(subscription, stripe_subscription) do
     plan = determine_plan_from_stripe_subscription(stripe_subscription)
 
     attrs = %{
-      user_id: user.id,
       plan_id: plan.id,
-      stripe_customer_id: stripe_subscription.customer,
-      stripe_subscription_id: stripe_subscription.id,
       stripe_price_id: get_price_id_from_subscription(stripe_subscription),
       status: stripe_subscription.status,
       current_period_start: unix_to_naive_datetime(stripe_subscription.current_period_start),
       current_period_end: unix_to_naive_datetime(stripe_subscription.current_period_end),
-      cancel_at_period_end: stripe_subscription.cancel_at_period_end || false
+      cancel_at_period_end: stripe_subscription.cancel_at_period_end || false,
+      canceled_at:
+        if(stripe_subscription.canceled_at,
+          do: unix_to_naive_datetime(stripe_subscription.canceled_at),
+          else: nil
+        )
     }
 
-    case create_subscription(attrs) do
-      {:ok, subscription} ->
-        sync_user_plan(subscription)
-        {:ok, subscription}
+    case update_subscription(subscription, attrs) do
+      {:ok, updated} ->
+        sync_user_plan(updated)
+        {:ok, updated}
 
       error ->
         error
     end
   end
 
-  @doc """
-  Handles checkout.session.completed event.
-
-  Updates subscription if needed (legacy support).
-  """
-  def handle_checkout_session_completed(session) do
-    customer_id = session.customer
-    subscription_id = session.subscription
-
-    # Get subscription details from Stripe to get price_id and other info
-    case Stripe.Subscription.retrieve(subscription_id) do
-      {:ok, stripe_subscription} ->
+  defp create_subscription_from_stripe(stripe_subscription, customer_id) do
+    case Accounts.get_user_by_stripe_customer_id(customer_id) do
+      %Accounts.User{} = user ->
         plan = determine_plan_from_stripe_subscription(stripe_subscription)
-        subscription = get_subscription_by_stripe_customer_id(customer_id)
 
         attrs = %{
-          stripe_subscription_id: subscription_id,
-          stripe_price_id: get_price_id_from_subscription(stripe_subscription),
+          user_id: user.id,
           plan_id: plan.id,
+          stripe_customer_id: customer_id,
+          stripe_subscription_id: stripe_subscription.id,
+          stripe_price_id: get_price_id_from_subscription(stripe_subscription),
           status: stripe_subscription.status,
           current_period_start: unix_to_naive_datetime(stripe_subscription.current_period_start),
           current_period_end: unix_to_naive_datetime(stripe_subscription.current_period_end),
           cancel_at_period_end: stripe_subscription.cancel_at_period_end || false
         }
 
-        result =
-          if subscription do
-            update_subscription(subscription, attrs)
-          else
-            Logger.error("No subscription record found for customer #{customer_id}")
-            {:error, :subscription_not_found}
-          end
-
-        case result do
-          {:ok, updated_subscription} ->
-            sync_user_plan(updated_subscription)
-            {:ok, updated_subscription}
+        case create_subscription(attrs) do
+          {:ok, subscription} ->
+            sync_user_plan(subscription)
+            {:ok, subscription}
 
           error ->
             error
         end
 
-      {:error, error} ->
-        Logger.error("Failed to retrieve Stripe subscription: #{inspect(error)}")
-        {:error, error}
-    end
-  end
-
-  @doc """
-  Handles customer.subscription.updated event.
-
-  Updates subscription status and syncs user plan.
-  """
-  def handle_subscription_updated(stripe_subscription) do
-    subscription_id = stripe_subscription.id
-    subscription = get_subscription_by_stripe_subscription_id(subscription_id)
-
-    if subscription do
-      attrs = %{
-        status: stripe_subscription.status,
-        current_period_start: unix_to_naive_datetime(stripe_subscription.current_period_start),
-        current_period_end: unix_to_naive_datetime(stripe_subscription.current_period_end),
-        cancel_at_period_end: stripe_subscription.cancel_at_period_end || false,
-        canceled_at:
-          if(stripe_subscription.canceled_at,
-            do: unix_to_naive_datetime(stripe_subscription.canceled_at),
-            else: nil
-          )
-      }
-
-      case update_subscription(subscription, attrs) do
-        {:ok, updated_subscription} ->
-          sync_user_plan(updated_subscription)
-          {:ok, updated_subscription}
-
-        error ->
-          error
-      end
-    else
-      Logger.warning("Subscription not found for Stripe subscription ID: #{subscription_id}")
-      {:error, :not_found}
+      nil ->
+        Logger.warning("User not found for Stripe customer ID: #{customer_id}")
+        {:error, :user_not_found}
     end
   end
 
