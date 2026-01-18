@@ -57,6 +57,11 @@ defmodule RssAssistant.AccountsFixtures do
 
   def pro_plan_fixture do
     RssAssistant.Repo.get_by(Plan, name: "Pro") ||
-      plan_fixture(%{name: "Pro", max_feeds: 100, price: Decimal.new("99.99")})
+      plan_fixture(%{
+        name: "Pro",
+        max_feeds: 100,
+        price: Decimal.new("99.99"),
+        stripe_price_id: "price_test_pro"
+      })
   end
 end
