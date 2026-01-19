@@ -1,15 +1,17 @@
 defmodule RssAssistant.Billing.StripeService do
   @moduledoc """
-  Wrapper around the Stripe API via the stripity_stripe library.
+  Wrapper around the Stripe API via our custom Req-based client.
 
-  This module is the ONLY place that directly uses the Stripe library.
+  This module is the ONLY place that directly uses the Stripe client.
   """
+
+  alias RssAssistant.Stripe
 
   @doc """
   Creates a Stripe customer with the given user's email and metadata.
   """
   def create_customer(user) do
-    Stripe.Customer.create(%{
+    Stripe.create_customer(%{
       email: user.email,
       metadata: %{
         user_id: user.id
@@ -23,7 +25,7 @@ defmodule RssAssistant.Billing.StripeService do
   Returns {:ok, session} or {:error, error}
   """
   def create_checkout_session(customer_id, price_id, success_url, cancel_url) do
-    Stripe.Checkout.Session.create(%{
+    Stripe.create_checkout_session(%{
       customer: customer_id,
       mode: "subscription",
       line_items: [
@@ -43,21 +45,10 @@ defmodule RssAssistant.Billing.StripeService do
   Returns {:ok, session} or {:error, error}
   """
   def create_billing_portal_session(customer_id, return_url) do
-    Stripe.BillingPortal.Session.create(%{
+    Stripe.create_billing_portal_session(%{
       customer: customer_id,
       return_url: return_url
     })
-  end
-
-  @doc """
-  Constructs and verifies a Stripe webhook event from the raw payload and signature.
-
-  Returns {:ok, event} or {:error, error}
-  """
-  def construct_webhook_event(payload, signature) do
-    webhook_secret = Application.get_env(:rss_assistant, :stripe_webhook_secret)
-
-    Stripe.Webhook.construct_event(payload, signature, webhook_secret)
   end
 
   @doc """
@@ -66,7 +57,7 @@ defmodule RssAssistant.Billing.StripeService do
   Returns {:ok, subscription} or {:error, error}
   """
   def cancel_subscription(subscription_id) do
-    Stripe.Subscription.cancel(subscription_id, %{})
+    Stripe.cancel_subscription(subscription_id)
   end
 
   @doc """
@@ -75,7 +66,7 @@ defmodule RssAssistant.Billing.StripeService do
   Returns {:ok, subscription} or {:error, error}
   """
   def reactivate_subscription(subscription_id) do
-    Stripe.Subscription.update(subscription_id, %{
+    Stripe.update_subscription(subscription_id, %{
       cancel_at_period_end: false
     })
   end

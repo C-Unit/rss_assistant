@@ -29,10 +29,8 @@ end
 
 # Configure Stripe (don't configure in test environment)
 if config_env() != :test do
-  config :stripity_stripe,
-    api_key: System.get_env("STRIPE_SECRET_KEY")
-
   config :rss_assistant,
+    stripe_api_key: System.get_env("STRIPE_SECRET_KEY"),
     stripe_webhook_secret: System.get_env("STRIPE_WEBHOOK_SECRET")
 end
 

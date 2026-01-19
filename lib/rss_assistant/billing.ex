@@ -88,12 +88,13 @@ defmodule RssAssistant.Billing do
   @doc """
   Handles a Stripe webhook event by dispatching to specific handlers.
   """
-  def handle_stripe_event(%Stripe.Event{type: event_type, data: %{object: object}}) do
+  def handle_stripe_event(%RssAssistant.Stripe.Event{type: event_type, data: %{object: object}}) do
     Logger.info("Processing Stripe webhook: #{event_type}")
 
     case event_type do
       "customer.subscription.created" ->
-        handle_subscription_created(object)
+        # Ignore - subscription.updated also fires and handles creation via upsert
+        {:ok, :ignored}
 
       "customer.subscription.updated" ->
         handle_subscription_updated(object)
@@ -175,6 +176,7 @@ defmodule RssAssistant.Billing do
 
   defp build_subscription_attrs(stripe_subscription, user, customer_id) do
     plan = determine_plan_from_stripe_subscription(stripe_subscription)
+    [item | _] = stripe_subscription.items.data
 
     %{
       user_id: user.id,
@@ -183,8 +185,8 @@ defmodule RssAssistant.Billing do
       stripe_subscription_id: stripe_subscription.id,
       stripe_price_id: get_price_id_from_subscription(stripe_subscription),
       status: stripe_subscription.status,
-      current_period_start: unix_to_naive_datetime(stripe_subscription.current_period_start),
-      current_period_end: unix_to_naive_datetime(stripe_subscription.current_period_end),
+      current_period_start: unix_to_naive_datetime(item.current_period_start),
+      current_period_end: unix_to_naive_datetime(item.current_period_end),
       cancel_at_period_end: stripe_subscription.cancel_at_period_end || false,
       canceled_at:
         if(stripe_subscription.canceled_at,
@@ -268,10 +270,8 @@ defmodule RssAssistant.Billing do
   Gets the price ID from a Stripe subscription object.
   """
   def get_price_id_from_subscription(stripe_subscription) do
-    stripe_subscription.items.data
-    |> List.first()
-    |> Map.get(:price)
-    |> Map.get(:id)
+    [item | _] = stripe_subscription.items.data
+    item.price.id
   end
 
   # Determines which plan to assign based on Stripe subscription price_id.

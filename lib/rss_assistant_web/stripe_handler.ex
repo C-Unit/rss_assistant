@@ -2,13 +2,12 @@ defmodule RssAssistantWeb.StripeHandler do
   @moduledoc """
   Handles Stripe webhook events.
   """
-  @behaviour Stripe.WebhookHandler
   require Logger
 
   alias RssAssistant.Billing
+  alias RssAssistant.Stripe.Event
 
-  @impl true
-  def handle_event(%Stripe.Event{} = event) do
+  def handle_event(%Event{} = event) do
     Logger.info("Stripe webhook received: #{event.type}")
     Billing.handle_stripe_event(event)
     :ok
