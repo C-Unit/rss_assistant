@@ -16,8 +16,6 @@ defmodule RssAssistant.Stripe.Price do
   @doc """
   Parses a Price from a Stripe API response map.
   """
-  def from_map(nil), do: nil
-
   def from_map(map) when is_map(map) do
     %__MODULE__{
       id: map["id"],

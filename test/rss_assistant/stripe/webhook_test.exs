@@ -16,7 +16,17 @@ defmodule RssAssistant.Stripe.WebhookTest do
               "id" => "sub_test123",
               "object" => "subscription",
               "customer" => "cus_test123",
-              "status" => "active"
+              "status" => "active",
+              "items" => %{
+                "data" => [
+                  %{
+                    "id" => "si_test",
+                    "current_period_start" => 1_609_459_200,
+                    "current_period_end" => 1_612_137_600,
+                    "price" => %{"id" => "price_test"}
+                  }
+                ]
+              }
             }
           },
           "created" => 1_609_459_200,

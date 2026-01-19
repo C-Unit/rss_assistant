@@ -53,11 +53,7 @@ defmodule RssAssistant.Stripe.Subscription do
     }
   end
 
-  defp parse_items(nil), do: nil
-
   defp parse_items(%{"data" => data}) when is_list(data) do
     %{data: Enum.map(data, &SubscriptionItem.from_map/1)}
   end
-
-  defp parse_items(_), do: nil
 end

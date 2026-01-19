@@ -53,17 +53,6 @@ defmodule RssAssistant.Stripe.SubscriptionTest do
       assert item.price.id == "price_1PgafmB7WZ01zgkW6dKueIc5"
     end
 
-    test "handles nil items" do
-      map = %{
-        "id" => "sub_test",
-        "customer" => "cus_test",
-        "status" => "active",
-        "items" => nil
-      }
-
-      subscription = Subscription.from_map(map)
-      assert subscription.items == nil
-    end
   end
 
   describe "SubscriptionItem.from_map/1" do
