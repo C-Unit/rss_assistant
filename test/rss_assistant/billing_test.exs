@@ -413,7 +413,6 @@ defmodule RssAssistant.BillingTest do
   end
 
   # Helper functions to build mock Stripe objects
-  # These now return structs that match our custom Stripe client
 
   defp build_stripe_subscription(attrs) do
     now = DateTime.to_unix(DateTime.utc_now())
