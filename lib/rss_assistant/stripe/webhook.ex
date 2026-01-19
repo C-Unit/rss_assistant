@@ -102,19 +102,14 @@ defmodule RssAssistant.Stripe.Webhook do
     end
   end
 
+  defp secure_compare(a, b) when byte_size(a) == byte_size(b) do
+    :crypto.hash_equals(a, b)
+  end
+
+  defp secure_compare(_, _), do: false
+
   defp compute_signature(payload, secret) do
     :crypto.mac(:hmac, :sha256, secret, payload)
     |> Base.encode16(case: :lower)
-  end
-
-  defp secure_compare(a, b) when byte_size(a) != byte_size(b), do: false
-
-  defp secure_compare(a, b) do
-    a_bytes = :binary.bin_to_list(a)
-    b_bytes = :binary.bin_to_list(b)
-
-    Enum.zip(a_bytes, b_bytes)
-    |> Enum.reduce(0, fn {x, y}, acc -> Bitwise.bor(acc, Bitwise.bxor(x, y)) end)
-    |> Kernel.==(0)
   end
 end
