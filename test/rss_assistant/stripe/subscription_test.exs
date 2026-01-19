@@ -52,7 +52,6 @@ defmodule RssAssistant.Stripe.SubscriptionTest do
       assert %Price{} = item.price
       assert item.price.id == "price_1PgafmB7WZ01zgkW6dKueIc5"
     end
-
   end
 
   describe "SubscriptionItem.from_map/1" do
