@@ -4,6 +4,7 @@ defmodule RssAssistant.BillingTest do
   alias RssAssistant.Accounts
   alias RssAssistant.Billing
   alias RssAssistant.Billing.Subscription
+  alias RssAssistant.Stripe.Event
 
   import RssAssistant.AccountsFixtures
 
@@ -25,7 +26,7 @@ defmodule RssAssistant.BillingTest do
           status: "active",
           current_period_start: DateTime.to_unix(DateTime.utc_now()),
           current_period_end: DateTime.to_unix(DateTime.add(DateTime.utc_now(), 30, :day)),
-          items: %{data: [%{price: %{id: pro_plan.stripe_price_id}}]}
+          price_id: pro_plan.stripe_price_id
         })
 
       assert {:ok, subscription} = Billing.handle_subscription_created(stripe_subscription)
@@ -58,7 +59,7 @@ defmodule RssAssistant.BillingTest do
           id: "sub_test123",
           customer: user.stripe_customer_id,
           status: "active",
-          items: %{data: [%{price: %{id: pro_plan.stripe_price_id}}]}
+          price_id: pro_plan.stripe_price_id
         })
 
       {:ok, subscription1} = Billing.handle_subscription_created(stripe_subscription)
@@ -128,7 +129,7 @@ defmodule RssAssistant.BillingTest do
           id: "sub_new",
           customer: new_user.stripe_customer_id,
           status: "active",
-          items: %{data: [%{price: %{id: pro_plan.stripe_price_id}}]}
+          price_id: pro_plan.stripe_price_id
         })
 
       assert {:ok, subscription} = Billing.handle_subscription_updated(stripe_subscription)
@@ -211,17 +212,19 @@ defmodule RssAssistant.BillingTest do
       %{user: user, free_plan: free_plan, pro_plan: pro_plan}
     end
 
-    test "dispatches subscription.created event", %{user: user, pro_plan: pro_plan} do
+    test "ignores subscription.created event (handled by subscription.updated)", %{
+      user: user,
+      pro_plan: pro_plan
+    } do
       event =
         build_stripe_event("customer.subscription.created", %{
           id: "sub_test123",
           customer: user.stripe_customer_id,
           status: "active",
-          items: %{data: [%{price: %{id: pro_plan.stripe_price_id}}]}
+          price_id: pro_plan.stripe_price_id
         })
 
-      assert {:ok, subscription} = Billing.handle_stripe_event(event)
-      assert subscription.stripe_subscription_id == "sub_test123"
+      assert {:ok, :ignored} = Billing.handle_stripe_event(event)
     end
 
     test "dispatches subscription.updated event", %{user: user, pro_plan: pro_plan} do
@@ -410,6 +413,7 @@ defmodule RssAssistant.BillingTest do
   end
 
   # Helper functions to build mock Stripe objects
+  # These now return structs that match our custom Stripe client
 
   defp build_stripe_subscription(attrs) do
     now = DateTime.to_unix(DateTime.utc_now())
@@ -423,16 +427,36 @@ defmodule RssAssistant.BillingTest do
       cancel_at_period_end: false,
       canceled_at: nil,
       ended_at: nil,
-      items: %{data: [%{price: %{id: "price_test_pro"}}]}
+      price_id: "price_test_pro"
     }
 
-    Map.merge(defaults, attrs)
+    merged = Map.merge(defaults, attrs)
+
+    # Build a struct-like map that matches our Stripe.Subscription access patterns
+    %{
+      id: merged.id,
+      customer: merged.customer,
+      status: merged.status,
+      cancel_at_period_end: merged.cancel_at_period_end,
+      canceled_at: merged.canceled_at,
+      ended_at: merged.ended_at,
+      items: %{
+        data: [
+          %{
+            current_period_start: merged.current_period_start,
+            current_period_end: merged.current_period_end,
+            price: %{id: merged.price_id}
+          }
+        ]
+      }
+    }
   end
 
   defp build_stripe_event(type, object_attrs) do
     object = build_stripe_subscription(object_attrs)
 
-    %Stripe.Event{
+    %Event{
+      id: "evt_test",
       type: type,
       data: %{object: object}
     }
