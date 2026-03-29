@@ -1,6 +1,7 @@
 defmodule RssAssistantWeb.FilteredFeedControllerTest do
   use RssAssistantWeb.ConnCase
 
+  import Ecto.Query
   import RssAssistant.AccountsFixtures
   import RssAssistant.FilteredFeedFixtures
 
@@ -187,6 +188,42 @@ defmodule RssAssistantWeb.FilteredFeedControllerTest do
       updated_feed = Repo.get!(FilteredFeed, feed.id)
       assert updated_feed.url == "https://updated.com/feed.xml"
       assert updated_feed.prompt == "Updated filter description"
+    end
+
+    test "clears cached decisions when feed is updated", %{conn: conn} do
+      user = user_fixture()
+      feed = filtered_feed_fixture(%{user_id: user.id})
+
+      # Create some cached decisions for this feed
+      for i <- 1..3 do
+        {:ok, _} =
+          %RssAssistant.FeedItemDecision{}
+          |> RssAssistant.FeedItemDecision.changeset(%{
+            item_id: "item#{i}",
+            should_include: false,
+            reasoning: "Old reason #{i}",
+            filtered_feed_id: feed.id
+          })
+          |> Repo.insert()
+      end
+
+      assert Repo.aggregate(
+               from(d in RssAssistant.FeedItemDecision, where: d.filtered_feed_id == ^feed.id),
+               :count,
+               :id
+             ) == 3
+
+      conn
+      |> log_in_user(user)
+      |> patch(~p"/filtered_feeds/#{feed.slug}",
+        filtered_feed: %{url: feed.url, prompt: "New filter prompt"}
+      )
+
+      assert Repo.aggregate(
+               from(d in RssAssistant.FeedItemDecision, where: d.filtered_feed_id == ^feed.id),
+               :count,
+               :id
+             ) == 0
     end
 
     test "returns 404 when updating another user's feed", %{conn: conn} do

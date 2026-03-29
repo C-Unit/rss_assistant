@@ -66,6 +66,8 @@ defmodule RssAssistantWeb.FilteredFeedController do
 
     case Repo.update(changeset) do
       {:ok, filtered_feed} ->
+        clear_feed_decisions(filtered_feed.id)
+
         conn
         |> put_flash(:info, "Filtered feed updated successfully!")
         |> redirect(to: ~p"/filtered_feeds/#{filtered_feed.slug}")
@@ -150,6 +152,11 @@ defmodule RssAssistantWeb.FilteredFeedController do
       content_type when is_binary(content_type) -> content_type
       _ -> "application/rss+xml"
     end
+  end
+
+  defp clear_feed_decisions(filtered_feed_id) do
+    from(d in FeedItemDecision, where: d.filtered_feed_id == ^filtered_feed_id)
+    |> Repo.delete_all()
   end
 
   defp get_filtered_items(filtered_feed_id) do
